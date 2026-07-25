@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Navbar } from "./Navbar";
+import { useThemeAndLang } from "./ThemeAndLangProvider";
 import { sehirler, ulkeler } from "./gezi-verileri";
 import type { Sehir, Ulke } from "./gezi-verileri";
 import type { CityMapPoint, UserPin } from "./TravelMap";
@@ -48,6 +49,7 @@ function sonMekanlar(sehir: Sehir) {
 }
 
 export default function Home() {
+  const { t } = useThemeAndLang();
   const [selectedCountry, setSelectedCountry] = useState<Ulke>(ulkeler[0]);
   const [seciliSehirId, setSeciliSehirId] = useState<string | null>(null);
   const [userPins, setUserPins] = useState<UserPin[]>(ORNEK_KULLANICI_PINLERI);
@@ -117,7 +119,7 @@ export default function Home() {
         <div className="map-top-bar">
           <div className="category-filters">
             {/* Ülke Seçicileri */}
-            <span className="filter-chip-label">Ülkeler:</span>
+            <span className="filter-chip-label">{t.countriesLabel}</span>
             {ulkeler.map((u) => (
               <button
                 className={`filter-chip ${selectedCountry.id === u.id ? "active" : ""}`}
@@ -137,26 +139,26 @@ export default function Home() {
               onClick={() => setActiveCategory("all")}
               type="button"
             >
-              🌟 Tümü
+              🌟 {t.all}
             </button>
             <button
               className={`filter-chip ${activeCategory === "Tarih" ? "active" : ""}`}
               onClick={() => setActiveCategory("Tarih")}
               type="button"
             >
-              🏛️ Tarih
+              🏛️ {t.history}
             </button>
             <button
               className={`filter-chip ${activeCategory === "Sahil" ? "active" : ""}`}
               onClick={() => setActiveCategory("Sahil")}
               type="button"
             >
-              🏖️ Sahil
+              🏖️ {t.beach}
             </button>
           </div>
 
           <div className="map-hint-badge">
-            💡 Ülkeye tıkla zoom yap, haritadan şehir seç!
+            {t.mapTip}
           </div>
         </div>
 
@@ -173,7 +175,7 @@ export default function Home() {
 
         {!seciliSehir ? (
           <div className="map-hint">
-            📍 Haritadaki pinlerden bir şehir seçin veya herhangi bir noktaya tıklayıp yeni pin ekleyin
+            {t.selectCityHint}
           </div>
         ) : (
           <aside className="city-drawer" aria-live="polite">
@@ -185,7 +187,7 @@ export default function Home() {
             >
               ✕
             </button>
-            <span className="small-label">{seciliSehir.ulke} • Seçili Şehir</span>
+            <span className="small-label">{seciliSehir.ulke} • {t.selectedCity}</span>
             <h1>{seciliSehir.ad}</h1>
             <p>{seciliSehir.ozet}</p>
 
@@ -198,20 +200,20 @@ export default function Home() {
             <div className="quick-stats">
               <div>
                 <strong>{seciliSehir.mekanlar.length}</strong>
-                <span>Mekan</span>
+                <span>{t.places}</span>
               </div>
               <div>
                 <strong>{seciliSehir.ziyaretSayisi}</strong>
-                <span>Ziyaretçi</span>
+                <span>{t.visitors}</span>
               </div>
               <div>
                 <strong>{toplamYorum}</strong>
-                <span>İnceleme</span>
+                <span>{t.reviews}</span>
               </div>
             </div>
 
             <div className="latest-places">
-              <span className="small-label">Popüler Mekanlar</span>
+              <span className="small-label">{t.popularPlaces}</span>
               {sonMekanlar(seciliSehir).map((mekan) => (
                 <Link
                   className="latest-place"
@@ -225,7 +227,7 @@ export default function Home() {
             </div>
 
             <Link className="primary-link" href={`/mekanlar/${seciliSehir.id}`}>
-              {seciliSehir.ad} Rehberini Aç →
+              {seciliSehir.ad} {t.openGuide}
             </Link>
           </aside>
         )}
