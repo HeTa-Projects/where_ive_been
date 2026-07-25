@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { Navbar } from "../../Navbar";
 import { useAuth } from "../../AuthProvider";
 import { sehirler } from "../../gezi-verileri";
-import type { Sehir } from "../../gezi-verileri";
+import type { Sehir, Yorum } from "../../gezi-verileri";
 
 export function MekanRehberiClient({
   sehir,
@@ -17,6 +17,20 @@ export function MekanRehberiClient({
   const { loading, user } = useAuth();
   const ilkMekanId = baslangicMekanId ?? sehir.mekanlar[0]?.id;
   const [seciliMekanId, setSeciliMekanId] = useState(ilkMekanId);
+
+  // Yorumlar local state
+  const [yorumlarMap, setYorumlarMap] = useState<Record<string, Yorum[]>>(() => {
+    const initial: Record<string, Yorum[]> = {};
+    sehir.mekanlar.forEach((m) => {
+      initial[m.id] = m.yorumlar;
+    });
+    return initial;
+  });
+
+  // Yeni Yorum Form State
+  const [yeniMetin, setYeniMetin] = useState("");
+  const [yeniPuan, setYeniPuan] = useState(5);
+
   const seciliMekan = useMemo(
     () =>
       sehir.mekanlar.find((mekan) => mekan.id === seciliMekanId) ??
@@ -24,18 +38,40 @@ export function MekanRehberiClient({
     [sehir.mekanlar, seciliMekanId],
   );
 
+  const mevcutYorumlar = yorumlarMap[seciliMekan.id] ?? seciliMekan.yorumlar;
+
+  const handleAddYorum = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!yeniMetin.trim()) return;
+
+    const yeniYorum: Yorum = {
+      id: `yrm-${Date.now()}`,
+      yazar: user?.displayName || user?.email?.split("@")[0] || "Gezgin Kullanıcı",
+      puan: yeniPuan,
+      metin: yeniMetin.trim(),
+      tarih: "Şimdi",
+    };
+
+    setYorumlarMap((prev) => ({
+      ...prev,
+      [seciliMekan.id]: [yeniYorum, ...(prev[seciliMekan.id] || [])],
+    }));
+
+    setYeniMetin("");
+    setYeniPuan(5);
+  };
+
   return (
     <main className="guide-shell">
       <Navbar mekanHref={`/mekanlar/${sehir.id}`} />
       <header className="guide-header">
         <div>
           <Link className="back-link" href="/">
-            Haritaya dön
+            ← Haritaya dön
           </Link>
           <h1>{sehir.ad} Mekan Rehberi</h1>
           <p>
-            Şehirde yorumlanmış mekanları görebilirsin. Detaylı kullanıcı
-            yorumları için giriş yapman gerekir.
+            {sehir.ad} şehrinin en sevilen noktalarını, puanlarını ve kullanıcı yorumlarını incele.
           </p>
         </div>
         <label className="city-select">
@@ -48,7 +84,7 @@ export function MekanRehberiClient({
           >
             {sehirler.map((item) => (
               <option key={item.id} value={item.id}>
-                {item.ad}
+                📍 {item.ad}
               </option>
             ))}
           </select>
@@ -72,10 +108,10 @@ export function MekanRehberiClient({
               type="button"
             >
               <span>
-                <strong>{mekan.ad}</strong>
+                <strong>📍 {mekan.ad}</strong>
                 <small>{mekan.tur}</small>
               </span>
-              <em>{mekan.puan.toFixed(1)}</em>
+              <em>★ {mekan.puan.toFixed(1)}</em>
             </button>
           ))}
         </div>
@@ -83,39 +119,72 @@ export function MekanRehberiClient({
         <article className="review-panel">
           <div className="review-heading">
             <div>
-              <span className="small-label">{seciliMekan.tur}</span>
+              <span className="small-label">📍 {seciliMekan.tur}</span>
               <h2>{seciliMekan.ad}</h2>
               <p>{seciliMekan.ozet}</p>
             </div>
             <div className="score-card">
-              <strong>{seciliMekan.puan.toFixed(1)}</strong>
-              <span>{seciliMekan.yorumSayisi} yorum</span>
+              <strong>★ {seciliMekan.puan.toFixed(1)}</strong>
+              <span>{mevcutYorumlar.length} yorum</span>
             </div>
           </div>
 
           {loading ? (
             <div className="locked-panel">Kullanıcı bilgisi kontrol ediliyor...</div>
           ) : user ? (
-            <div className="comment-list">
-              {seciliMekan.yorumlar.map((yorum) => (
-                <section className="comment-card" key={yorum.id}>
-                  <div>
-                    <strong>{yorum.yazar}</strong>
-                    <span>{yorum.tarih}</span>
-                  </div>
-                  <p>{yorum.metin}</p>
-                  <small>{yorum.puan}/5 puan</small>
-                </section>
-              ))}
+            <div className="reviews-container">
+              {/* Yeni Yorum Formu */}
+              <form className="add-review-form" onSubmit={handleAddYorum}>
+                <h3>✨ Mekanı Değerlendir & Yorum Yap</h3>
+                <div className="star-rating-selector">
+                  <span>Puanın:</span>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      className={`star-btn ${star <= yeniPuan ? "active" : ""}`}
+                      key={star}
+                      onClick={() => setYeniPuan(star)}
+                      type="button"
+                    >
+                      ★
+                    </button>
+                  ))}
+                  <strong className="score-label">{yeniPuan} / 5 Yıldız</strong>
+                </div>
+                <textarea
+                  onChange={(e) => setYeniMetin(e.target.value)}
+                  placeholder={`${seciliMekan.ad} hakkındaki deneyimini ve önerilerini yaz...`}
+                  required
+                  rows={3}
+                  value={yeniMetin}
+                />
+                <button type="submit">Yorumu Gönder ✨</button>
+              </form>
+
+              {/* Yorum Listesi */}
+              <div className="comment-list">
+                <span className="small-label">Gezgin Yorumları</span>
+                {mevcutYorumlar.map((yorum) => (
+                  <section className="comment-card" key={yorum.id}>
+                    <div className="comment-meta">
+                      <strong>👤 {yorum.yazar}</strong>
+                      <span>{yorum.tarih}</span>
+                    </div>
+                    <p>"{yorum.metin}"</p>
+                    <small className="star-display">
+                      {"★".repeat(yorum.puan)}{"☆".repeat(5 - yorum.puan)} ({yorum.puan}/5)
+                    </small>
+                  </section>
+                ))}
+              </div>
             </div>
           ) : (
             <div className="locked-panel">
               <span className="small-label">Kısıtlı görünüm</span>
-              <h3>Yorumları görmek için giriş yapmalı ya da kayıt olmalısın.</h3>
+              <h3>Yorumları görmek ve değerlendirmek için giriş yapmalısın.</h3>
               <p>
-                Giriş yapmadan mekan adını, türünü, puanını ve kısa özetini
-                görebilirsin. Kullanıcı yorumları ve yeni yorum yazma alanı
-                hesap gerektirir.
+                Giriş yapmadan mekan adını, türünü ve özetini
+                görebilirsin. Detaylı kullanıcı yorumları ve puanlama
+                için hesabına giriş yap.
               </p>
               <div className="auth-actions">
                 <Link className="primary-link" href="/giris">

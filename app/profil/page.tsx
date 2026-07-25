@@ -4,61 +4,152 @@ import Link from "next/link";
 import { Navbar } from "../Navbar";
 import { useAuth } from "../AuthProvider";
 
+type Badge = {
+  id: string;
+  icon: string;
+  title: string;
+  desc: string;
+  unlocked: boolean;
+};
+
+const ROZETLER: Badge[] = [
+  {
+    id: "rozet-1",
+    icon: "🧭",
+    title: "İlk Adım Gezgini",
+    desc: "İlk rotanı ve gezdiğin mekanı işaretledin.",
+    unlocked: true,
+  },
+  {
+    id: "rozet-2",
+    icon: "🏛️",
+    title: "Tarih Keşifçisi",
+    desc: "5 veya daha fazla tarihi mekanı ziyaret ettin.",
+    unlocked: true,
+  },
+  {
+    id: "rozet-3",
+    icon: "🏕️",
+    title: "Doğa & Kamp Tutkunu",
+    desc: "Doğa parkı ve koy rotalarını rehberine ekledin.",
+    unlocked: true,
+  },
+  {
+    id: "rozet-4",
+    icon: "📸",
+    title: "Sokak Fotoğrafçısı",
+    desc: "Şehir içi kültür ve mahalle rotalarını tamamladın.",
+    unlocked: false,
+  },
+  {
+    id: "rozet-5",
+    icon: "⭐",
+    title: "Gurme Keşifçi",
+    desc: "Lezzet duraklarına 10 değerlendirme yazdın.",
+    unlocked: false,
+  },
+];
+
 export default function Profil() {
   const { cikisYap, loading, user } = useAuth();
+
+  const userInitial = (user?.displayName || user?.email || "G").charAt(0).toUpperCase();
 
   return (
     <main className="page-shell">
       <Navbar />
       <section className="profile-layout">
         <div className="profile-card">
-          <span className="small-label">Profil</span>
+          <span className="small-label">Gezgin Profili</span>
           {loading ? (
             <h1>Profil yükleniyor...</h1>
           ) : user ? (
             <>
-              <h1>{user.displayName || "Gezgin kullanıcı"}</h1>
-              <p>{user.email}</p>
-              <div className="profile-stats">
-                <div>
-                  <strong>0</strong>
-                  <span>yorum</span>
+              <div className="profile-header-user">
+                <div className="profile-avatar-circle">
+                  <span>{userInitial}</span>
                 </div>
                 <div>
-                  <strong>0</strong>
-                  <span>topluluk mesajı</span>
-                </div>
-                <div>
-                  <strong>0</strong>
-                  <span>kaydedilen şehir</span>
+                  <h1>{user.displayName || user.email?.split("@")[0] || "Gezgin Kullanıcı"}</h1>
+                  <p>{user.email}</p>
                 </div>
               </div>
-              <button className="secondary-action" onClick={cikisYap} type="button">
-                Çıkış yap
+
+              <div className="profile-stats">
+                <div>
+                  <strong>5</strong>
+                  <span>Gezilen Şehir</span>
+                </div>
+                <div>
+                  <strong>12</strong>
+                  <span>İşaretli Pin</span>
+                </div>
+                <div>
+                  <strong>%6.1</strong>
+                  <span>Türkiye Gezi Oranı</span>
+                </div>
+              </div>
+
+              {/* Gezgin Rozetleri */}
+              <div className="badges-section">
+                <span className="small-label">Kazanılan Gezgin Rozetleri</span>
+                <div className="badges-grid">
+                  {ROZETLER.map((rozet) => (
+                    <div
+                      className={`badge-item ${rozet.unlocked ? "unlocked" : "locked"}`}
+                      key={rozet.id}
+                    >
+                      <span className="badge-icon">{rozet.icon}</span>
+                      <div>
+                        <strong>{rozet.title}</strong>
+                        <p>{rozet.desc}</p>
+                      </div>
+                      {!rozet.unlocked && <span className="lock-tag">🔒 Kilitli</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <button className="secondary-action logout-btn" onClick={cikisYap} type="button">
+                🚪 Çıkış Yap
               </button>
             </>
           ) : (
             <>
               <h1>Profilini görmek için giriş yapmalısın.</h1>
               <p>
-                Giriş yaptıktan sonra yorumların, topluluk mesajların ve gezi
+                Giriş yaptıktan sonra yorumların, topluluk mesajların, rozetlerin ve gezi
                 geçmişin burada görünecek.
               </p>
-              <Link className="primary-link" href="/giris">
-                Giriş yap
-              </Link>
+              <div className="auth-actions">
+                <Link className="primary-link" href="/giris">
+                  Giriş yap
+                </Link>
+                <Link className="outline-link" href="/kayit">
+                  Kayıt ol
+                </Link>
+              </div>
             </>
           )}
         </div>
 
         <aside className="profile-card muted-profile">
-          <span className="small-label">Sonraki aşama</span>
-          <h2>Profil verileri Firestore'a bağlanacak.</h2>
-          <p>
-            Şimdilik Firebase Authentication ile kullanıcı hesabını görüyoruz.
-            Sonraki adımda kullanıcının yorumlarını ve favori şehirlerini
-            Firestore'dan çekeceğiz.
-          </p>
+          <span className="small-label">Kişisel Harita & Rotalarım</span>
+          <h2>Gezilen Rotalar & Favoriler</h2>
+          <div className="saved-routes-list">
+            <div className="saved-route-card">
+              <span>📍 Kapadokya & Nevşehir</span>
+              <small>3 Ziyaret Noktası • Favori</small>
+            </div>
+            <div className="saved-route-card">
+              <span>📍 Kaş & Kekova Koyu</span>
+              <small>4 Deniz Rotası • Gidildi</small>
+            </div>
+            <div className="saved-route-card">
+              <span>📍 Eskişehir Odunpazarı</span>
+              <small>2 Müze Durak • Gidildi</small>
+            </div>
+          </div>
         </aside>
       </section>
     </main>
