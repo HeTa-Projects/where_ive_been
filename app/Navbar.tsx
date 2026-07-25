@@ -31,6 +31,9 @@ export function Navbar({
         <Link className={isActive("/") ? "active" : ""} href="/">
           <span className="nav-icon">🗺️</span> Ana Sayfa
         </Link>
+        <Link className={isActive("/rotalar") ? "active" : ""} href="/rotalar">
+          <span className="nav-icon">📍</span> Rotalar
+        </Link>
         <Link className={isActive("/mekanlar") ? "active" : ""} href={mekanHref}>
           <span className="nav-icon">🏰</span> Mekan Rehberi
         </Link>

@@ -1154,6 +1154,132 @@ a {
 }
 
 /* ==========================================================================
+   Routes Page (/rotalar)
+   ========================================================================== */
+
+.create-route-btn {
+  white-space: nowrap;
+}
+
+.routes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 24px;
+}
+
+.route-card {
+  background: var(--bg-surface);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  box-shadow: var(--shadow-main);
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s ease;
+}
+
+.route-card:hover {
+  border-color: rgba(16, 185, 129, 0.35);
+  transform: translateY(-4px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+}
+
+.route-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.duration-tag {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--accent-amber);
+  background: rgba(245, 158, 11, 0.1);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+}
+
+.route-card h2 {
+  font-size: 22px;
+  margin: 0 0 6px;
+  color: var(--text-main);
+}
+
+.route-author {
+  font-size: 13px;
+  color: var(--accent-cyan);
+  margin: 0 0 12px;
+  font-weight: 700;
+}
+
+.route-summary {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin: 0 0 18px;
+}
+
+.route-stops {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  margin-top: auto;
+  margin-bottom: 18px;
+}
+
+.stops-list {
+  margin: 8px 0 0;
+  padding-left: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stops-list li {
+  font-size: 13px;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stop-num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.2);
+  color: var(--accent-emerald);
+  font-size: 11px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.route-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.compact-link {
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
+.form-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* ==========================================================================
    Animations
    ========================================================================== */
 
