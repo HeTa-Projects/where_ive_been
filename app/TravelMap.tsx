@@ -282,7 +282,7 @@ export function TravelMap({
             key={country.id}
             position={country.koordinat}
           >
-            <Popup className="dark-map-popup">
+            <Popup autoPan={false} className="dark-map-popup">
               <div className="popup-card">
                 <h3>
                   <img
@@ -395,7 +395,7 @@ export function TravelMap({
                   key={city.id}
                   position={city.coordinates}
                 >
-                  <Popup className="dark-map-popup">
+                  <Popup autoPan={false} className="dark-map-popup">
                     <div className="popup-card">
                       <h3>📍 {city.name} ({city.countryName})</h3>
                       <p>🏛️ {city.placesCount} {t.popularPlaces}</p>
@@ -413,7 +413,7 @@ export function TravelMap({
             key={pin.id}
             position={[pin.lat, pin.lng]}
           >
-            <Popup className="dark-map-popup">
+            <Popup autoPan={false} className="dark-map-popup">
               <div className="popup-card">
                 <h3>
                   {pin.category === "visited"
