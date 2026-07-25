@@ -1,9 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  addDoc,
+  collection,
+  doc,
+  increment,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+  updateDoc,
+} from "firebase/firestore";
 import { Navbar } from "../Navbar";
 import { useAuth } from "../AuthProvider";
+import { db } from "../firebase";
 import { sehirler } from "../gezi-verileri";
 
 type DiscussionPost = {
@@ -94,7 +106,73 @@ export default function Topluluk() {
   const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>({});
 
   const seciliSehir = sehirler.find((sehir) => sehir.id === sehirId) ?? sehirler[0];
-  
+
+  // Firebase & LocalStorage Sync
+  useEffect(() => {
+    let localPosts: DiscussionPost[] = [];
+    try {
+      const savedLocal = localStorage.getItem("whib_community_posts");
+      if (savedLocal) {
+        localPosts = JSON.parse(savedLocal);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    if (db) {
+      try {
+        const q = query(collection(db, "discussions"), orderBy("createdAt", "desc"));
+        const unsubscribe = onSnapshot(
+          q,
+          (snapshot) => {
+            if (!snapshot.empty) {
+              const remotePosts: DiscussionPost[] = snapshot.docs.map((docSnap) => {
+                const data = docSnap.data();
+                return {
+                  id: docSnap.id,
+                  sehirId: data.sehirId || "eskisehir",
+                  mekan: data.mekan || "",
+                  yazar: data.yazar || "Gezgin",
+                  zaman: data.createdAt?.toDate
+                    ? data.createdAt.toDate().toLocaleDateString("tr-TR")
+                    : "Şimdi",
+                  metin: data.metin || "",
+                  cevap: data.cevap || 0,
+                  likes: data.likes || 0,
+                  category: data.category || "📍 Rota Tavsiyesi",
+                };
+              });
+
+              const combined = [...remotePosts];
+              BASLANGIC_KONUSMALARI.forEach((b) => {
+                if (!combined.some((c) => c.id === b.id)) {
+                  combined.push(b);
+                }
+              });
+              setKonusmalar(combined);
+            }
+          },
+          (err) => {
+            console.warn("Firestore snapshot error:", err);
+          },
+        );
+        return () => unsubscribe();
+      } catch (err) {
+        console.warn("Firestore connection error:", err);
+      }
+    }
+
+    if (localPosts.length > 0) {
+      const combined = [...localPosts];
+      BASLANGIC_KONUSMALARI.forEach((b) => {
+        if (!combined.some((c) => c.id === b.id)) {
+          combined.push(b);
+        }
+      });
+      setKonusmalar(combined);
+    }
+  }, []);
+
   const sehirKonusmalari = useMemo(() => {
     return konusmalar.filter((konusma) => {
       const matchCity = konusma.sehirId === sehirId;
@@ -103,35 +181,46 @@ export default function Topluluk() {
     });
   }, [konusmalar, sehirId, selectedCategory]);
 
-  const handleLike = (postId: string) => {
-    setLikedPosts((prev) => {
-      const isAlreadyLiked = prev[postId];
-      return { ...prev, [postId]: !isAlreadyLiked };
-    });
+  const handleLike = async (postId: string) => {
+    const isLikedNow = !likedPosts[postId];
+    setLikedPosts((prev) => ({ ...prev, [postId]: isLikedNow }));
 
     setKonusmalar((prev) =>
       prev.map((post) => {
         if (post.id === postId) {
-          const isLiked = likedPosts[postId];
           return {
             ...post,
-            likes: isLiked ? post.likes - 1 : post.likes + 1,
+            likes: isLikedNow ? post.likes + 1 : Math.max(0, post.likes - 1),
           };
         }
         return post;
       }),
     );
+
+    if (db && !postId.startsWith("post-") && !BASLANGIC_KONUSMALARI.some((b) => b.id === postId)) {
+      try {
+        const postRef = doc(db, "discussions", postId);
+        await updateDoc(postRef, {
+          likes: increment(isLikedNow ? 1 : -1),
+        });
+      } catch (err) {
+        console.error("Firestore like error:", err);
+      }
+    }
   };
 
-  const handleCreatePost = (e: React.FormEvent) => {
+  const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!yeniMetin.trim()) return;
 
-    const newPost: DiscussionPost = {
+    const yazarAd = user?.displayName || user?.email?.split("@")[0] || "Gezgin Kullanıcı";
+    const mekanAd = yeniMekan.trim() || seciliSehir.ad;
+
+    const newPostState: DiscussionPost = {
       id: `post-${Date.now()}`,
       sehirId: sehirId,
-      mekan: yeniMekan.trim() || seciliSehir.ad,
-      yazar: user?.displayName || user?.email?.split("@")[0] || "Gezgin Kullanıcı",
+      mekan: mekanAd,
+      yazar: yazarAd,
       zaman: "Şimdi",
       metin: yeniMetin.trim(),
       cevap: 0,
@@ -139,7 +228,32 @@ export default function Topluluk() {
       category: yeniCategory,
     };
 
-    setKonusmalar((prev) => [newPost, ...prev]);
+    setKonusmalar((prev) => [newPostState, ...prev]);
+
+    try {
+      const existing = JSON.parse(localStorage.getItem("whib_community_posts") || "[]");
+      localStorage.setItem("whib_community_posts", JSON.stringify([newPostState, ...existing]));
+    } catch (err) {
+      console.error(err);
+    }
+
+    if (db) {
+      try {
+        await addDoc(collection(db, "discussions"), {
+          sehirId: sehirId,
+          mekan: mekanAd,
+          yazar: yazarAd,
+          metin: yeniMetin.trim(),
+          cevap: 0,
+          likes: 1,
+          category: yeniCategory,
+          createdAt: serverTimestamp(),
+        });
+      } catch (err) {
+        console.error("Firestore post creation error:", err);
+      }
+    }
+
     setYeniMekan("");
     setYeniMetin("");
   };
