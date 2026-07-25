@@ -1,43 +1,27 @@
-# Where I've Been
+# Where I've Been 🌍
 
-Gezilen sehirleri, mekan yorumlarini, puanlari ve topluluk paylasimlarini
-toplayan web uygulamasi iskeleti.
+Gezilen şehirleri, harita pinlerini, mekan yorumlarını, puanları, gezgin rotalarını ve topluluk paylaşımlarını yöneten interaktif web uygulaması.
 
-## Kullanilan Teknolojiler
+## 🚀 Öne Çıkan Özellikler
 
-- React ile arayuz
-- TypeScript / TSX ile ekran kodlari
-- CSS ile tasarim
-- Vinext ile yerel calistirma ve build
-- Firebase Authentication ve Firestore sonraki adim olarak eklenecek
+- **İnteraktif Canlı Harita (Leaflet)**: Ülke ve şehir düzeyinde gezgin haritası, özel renkli yuvarlak pin rozetleri (✅ Gittim, 📌 Rota Listemde, ❤️ Favorim).
+- **Firebase Firestore & Auth Entegrasyonu**: Kullanıcı kaydı/girişi, özel kullanıcı harita pinleri, profil fotoğrafları, rozetler, mekan yorumları ve topluluk forum sohbetleri canlı senkronize edilir.
+- **Topluluk & Gezgin Forumu**: Şehir bazlı sohbet başlıkları, sorular, deneyim paylaşımları ve beğeni etkileşimleri.
+- **Gezgin Rotaları**: 1-2 günlük şehir rotaları, durak takipleri ve yayınlama.
+- **Yerel Depolama (LocalStorage Fallback)**: İnternet veya veritabanı kesintisinde tam çevrimdışı destek.
 
-## Nasil Calistirilir?
+## 🛠️ Kullanılan Teknolojiler
+
+- Next.js 16 (App Router) & React 19
+- TypeScript & Modern Vanilla CSS (Glassmorphism Dark/Light Theme)
+- Leaflet & React-Leaflet
+- Firebase Authentication & Firestore
+
+## 💻 Nasıl Çalıştırılır?
 
 ```bash
-npm.cmd install
-npm.cmd run dev
+npm install
+npm run dev
 ```
 
-Sonra tarayicida su adresi ac:
-
-```txt
-http://localhost:3000/
-```
-
-## Ana Dosyalar
-
-- `app/page.tsx`: Ana ekran, sehirler, mekanlar ve topluluk ornek verileri
-- `app/globals.css`: Sayfanin gorunumu ve mobil uyumu
-- `app/layout.tsx`: Site basligi ve genel sayfa yapisi
-
-## Sonraki Adimlar
-
-- Firebase projesi acmak
-- Firebase Authentication ile kullanici girisi eklemek
-- Firestore koleksiyonlarini olusturmak:
-  - `users`
-  - `cities`
-  - `places`
-  - `reviews`
-  - `communityPosts`
-- Harita icin Leaflet veya Mapbox eklemek
+Tarayıcıda açın: `http://localhost:3000`
