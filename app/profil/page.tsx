@@ -15,28 +15,67 @@ type Badge = {
   unlocked: boolean;
 };
 
+const PRESET_AVATARS = [
+  { id: "av-1", emoji: "🎒", label: "Gezgin Kaşif", url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80" },
+  { id: "av-2", emoji: "📸", label: "Fotoğrafçı", url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=250&q=80" },
+  { id: "av-3", emoji: "🏕️", label: "Doğa Kampçısı", url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=250&q=80" },
+  { id: "av-4", emoji: "⛵", label: "Denizci", url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=250&q=80" },
+  { id: "av-5", emoji: "🏰", label: "Tarih Avcısı", url: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=250&q=80" },
+];
+
 export default function Profil() {
   const { cikisYap, loading, user } = useAuth();
   const { t } = useThemeAndLang();
   const [userPins, setUserPins] = useState<UserPin[]>([]);
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
 
   useEffect(() => {
     if (!user) {
       setUserPins([]);
+      setProfilePhoto(null);
       return;
     }
-    const storageKey = `whib_user_pins_${user.uid}`;
-    const saved = localStorage.getItem(storageKey);
-    if (saved) {
+
+    // Load User Pins
+    const pinsKey = `whib_user_pins_${user.uid}`;
+    const savedPins = localStorage.getItem(pinsKey);
+    if (savedPins) {
       try {
-        setUserPins(JSON.parse(saved));
+        setUserPins(JSON.parse(savedPins));
       } catch {
         setUserPins([]);
       }
-    } else {
-      setUserPins([]);
+    }
+
+    // Load Profile Photo
+    const photoKey = `whib_user_photo_${user.uid}`;
+    const savedPhoto = localStorage.getItem(photoKey);
+    if (savedPhoto) {
+      setProfilePhoto(savedPhoto);
     }
   }, [user]);
+
+  const handleSavePhoto = (photoUrl: string) => {
+    setProfilePhoto(photoUrl);
+    if (user) {
+      localStorage.setItem(`whib_user_photo_${user.uid}`, photoUrl);
+    }
+    setShowPhotoModal(false);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (reader.result) {
+        handleSavePhoto(reader.result as string);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const totalPins = userPins.length;
   const visitedPins = userPins.filter((p) => p.category === "visited");
@@ -89,11 +128,30 @@ export default function Profil() {
           ) : user ? (
             <>
               <div className="profile-header-user">
-                <div className="profile-avatar-circle">
-                  <span>{userInitial}</span>
+                <div
+                  className="profile-avatar-circle clickable-avatar"
+                  onClick={() => setShowPhotoModal(true)}
+                  title="Profil Fotoğrafını Değiştir"
+                >
+                  {profilePhoto ? (
+                    <img alt="Profil Fotoğrafı" className="avatar-img" src={profilePhoto} />
+                  ) : (
+                    <span>{userInitial}</span>
+                  )}
+                  <div className="avatar-overlay-icon">📷</div>
                 </div>
+
                 <div>
-                  <h1>{user.displayName || user.email?.split("@")[0] || "Gezgin Kullanıcı"}</h1>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <h1>{user.displayName || user.email?.split("@")[0] || "Gezgin Kullanıcı"}</h1>
+                    <button
+                      className="edit-photo-btn"
+                      onClick={() => setShowPhotoModal(true)}
+                      type="button"
+                    >
+                      📷 Fotoğraf Değiştir
+                    </button>
+                  </div>
                   <p>{user.email}</p>
                 </div>
               </div>
@@ -183,6 +241,59 @@ export default function Profil() {
           </div>
         </aside>
       </section>
+
+      {/* Profil Fotoğrafı Değiştirme Modalı */}
+      {showPhotoModal && (
+        <div className="pin-modal-overlay">
+          <div className="pin-modal photo-modal">
+            <button
+              className="modal-close"
+              onClick={() => setShowPhotoModal(false)}
+              type="button"
+            >
+              ✕
+            </button>
+            <h3>📷 Profil Fotoğrafı Ekle / Değiştir</h3>
+            <p className="coords-info">Bilgisayarından resim yükle veya gezgin avatarlarından seç.</p>
+
+            {/* Dosya Yükleme Alanı */}
+            <div className="file-upload-box">
+              <label className="upload-label">
+                <span>📁 Bilgisayarından Fotoğraf Seç</span>
+                <input accept="image/*" onChange={handleFileUpload} type="file" />
+              </label>
+            </div>
+
+            <div style={{ margin: "16px 0 8px", textAlign: "center", fontSize: 13, color: "var(--text-muted)" }}>
+              veya Hazır Gezgin Avatarlarından Seç:
+            </div>
+
+            <div className="preset-avatars-grid">
+              {PRESET_AVATARS.map((av) => (
+                <button
+                  className="avatar-preset-btn"
+                  key={av.id}
+                  onClick={() => handleSavePhoto(av.url)}
+                  type="button"
+                >
+                  <img alt={av.label} src={av.url} />
+                  <span>{av.emoji} {av.label}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="modal-actions" style={{ marginTop: 20 }}>
+              <button
+                className="cancel-btn"
+                onClick={() => setShowPhotoModal(false)}
+                type="button"
+              >
+                İptal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
