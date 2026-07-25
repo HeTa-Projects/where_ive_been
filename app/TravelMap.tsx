@@ -37,58 +37,59 @@ export type UserPin = {
 
 const MAP_STYLES = {
   voyager: {
-    name: "🗺️ Canlı Harita",
+    name: "🗺️ Canlı Harita & Sınırlar (HD)",
     url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+    lightUrl: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
     attribution: '&copy; OpenStreetMap &copy; CARTO',
   },
   dark: {
-    name: "🌙 Gece Modu",
+    name: "🌙 Gece Haritası",
     url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    lightUrl: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
     attribution: '&copy; OpenStreetMap &copy; CARTO',
   },
   topo: {
-    name: "🏔️ Arazi & Sınırlar",
+    name: "🏔️ Topoğrafya & Sınırlar",
     url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
-    attribution: '&copy; Esri',
+    lightUrl: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
+    attribution: '&copy; Esri World Topo',
   },
   satellite: {
-    name: "🛰️ Canlı Uydu",
+    name: "🛰️ Canlı Uydu Görünümü",
     url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-    attribution: '&copy; Esri',
+    lightUrl: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    attribution: '&copy; Esri World Imagery',
   },
 };
 
 function createCountryIcon(country: Ulke) {
   return L.divIcon({
-    className: "custom-country-pin",
+    className: "custom-country-pin-wrapper",
     html: `
-      <div class="country-pulse"></div>
       <div class="country-bubble">
         <span class="country-flag">${country.bayrak}</span>
         <span class="country-name">${country.ad}</span>
-        <span class="country-count">${country.sehirSayisi} Şehir</span>
       </div>
     `,
-    iconAnchor: [36, 18],
-    iconSize: [72, 36],
-    popupAnchor: [0, -20],
+    iconAnchor: [60, 18],
+    iconSize: [120, 36],
+    popupAnchor: [0, -18],
   });
 }
 
-function createCityIcon(isSelected: boolean, cityName: string, placesCount: number) {
+function createCityIcon(isSelected: boolean, cityName: string, placesCount: number, countryFlag?: string) {
   return L.divIcon({
-    className: `custom-map-pin ${isSelected ? "custom-map-pin-active" : ""}`,
+    className: "custom-city-pin-wrapper",
     html: `
-      <div class="pin-pulse"></div>
-      <div class="pin-core">
-        <span class="pin-dot"></span>
+      <div class="city-bubble ${isSelected ? "active" : ""}">
+        <span class="city-flag">${countryFlag || "📍"}</span>
+        <span class="city-name">${cityName}</span>
+        <span class="city-count">${placesCount}</span>
       </div>
-      <div class="pin-badge">${placesCount}</div>
-      <div class="pin-label">${cityName}</div>
     `,
-    iconAnchor: [16, 32],
-    iconSize: [32, 32],
-    popupAnchor: [0, -32],
+    iconAnchor: [60, 18],
+    iconSize: [120, 36],
+    popupAnchor: [0, -18],
   });
 }
 
@@ -124,14 +125,9 @@ function MapFlyTo({
   zoom: number;
 }) {
   const map = useMap();
-
   useEffect(() => {
-    map.flyTo(target, zoom, {
-      duration: 1.4,
-      easeLinearity: 0.25,
-    });
-  }, [map, target, zoom]);
-
+    map.flyTo(target, zoom, { duration: 1.2, animate: true });
+  }, [map, target[0], target[1], zoom]);
   return null;
 }
 
@@ -149,60 +145,71 @@ function MapClickHandler({
 }
 
 export function TravelMap({
-  countries = [],
-  cities = [],
-  selectedCity,
+  countries,
+  cities,
   selectedCountry,
-  onSelectCity,
-  onSelectCountry,
+  selectedCity,
   userPins = [],
+  isLoggedIn = false,
+  onSelectCountry,
+  onSelectCity,
   onAddNewUserPin,
+  onAuthRequired,
 }: {
-  countries?: Ulke[];
+  countries: Ulke[];
   cities: CityMapPoint[];
-  selectedCity: CityMapPoint;
   selectedCountry: Ulke;
-  onSelectCity: (cityId: string) => void;
-  onSelectCountry: (country: Ulke) => void;
+  selectedCity?: CityMapPoint;
   userPins?: UserPin[];
+  isLoggedIn?: boolean;
+  onSelectCountry: (country: Ulke) => void;
+  onSelectCity: (cityId: string) => void;
   onAddNewUserPin?: (pin: Omit<UserPin, "id">) => void;
+  onAuthRequired?: () => void;
 }) {
   const { theme, t } = useThemeAndLang();
-  const [viewLevel, setViewLevel] = useState<"countries" | "cities">("cities");
-  const [currentStyle, setCurrentStyle] = useState<keyof typeof MAP_STYLES>(
-    theme === "dark" ? "dark" : "voyager",
+  const [currentStyle, setCurrentStyle] =
+    useState<keyof typeof MAP_STYLES>("voyager");
+  const [activeCountryId, setActiveCountryId] = useState<string | null>(
+    selectedCountry.id,
   );
+  const [mapTarget, setMapTarget] = useState<[number, number]>(
+    selectedCountry.koordinat,
+  );
+  const [mapZoom, setMapZoom] = useState<number>(selectedCountry.zoom || 5);
 
-  useEffect(() => {
-    setCurrentStyle(theme === "dark" ? "dark" : "voyager");
-  }, [theme]);
+  const activeTileUrl =
+    theme === "light"
+      ? MAP_STYLES[currentStyle].lightUrl
+      : MAP_STYLES[currentStyle].url;
 
-  // Map Target & Zoom state for animated smooth flyTo
-  const [mapTarget, setMapTarget] = useState<[number, number]>(selectedCity.coordinates);
-  const [mapZoom, setMapZoom] = useState<number>(6);
-
-  // Pin creation modal state
-  const [newPinCoords, setNewPinCoords] = useState<{ lat: number; lng: number } | null>(null);
+  // New Pin Modal State
+  const [newPinCoords, setNewPinCoords] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
   const [newPinTitle, setNewPinTitle] = useState("");
-  const [newPinCategory, setNewPinCategory] = useState<"visited" | "wishlist" | "favorite">("visited");
+  const [newPinCategory, setNewPinCategory] = useState<
+    "visited" | "wishlist" | "favorite"
+  >("visited");
   const [newPinNote, setNewPinNote] = useState("");
 
   const handleCountryClick = (country: Ulke) => {
+    setActiveCountryId(country.id);
     onSelectCountry(country);
-    setMapTarget(country.koordinat);
-    setMapZoom(country.zoom);
-    setViewLevel("cities");
+    setMapTarget([country.koordinat[0], country.koordinat[1]]);
+    setMapZoom(country.zoom || 7);
   };
 
   const handleCityClick = (city: CityMapPoint) => {
     onSelectCity(city.id);
     setMapTarget(city.coordinates);
-    setMapZoom(8);
+    setMapZoom(9);
   };
 
   const handleZoomToWorld = () => {
-    setViewLevel("countries");
-    setMapTarget([42.0, 20.0]); // European/Global center
+    setActiveCountryId(null);
+    setMapTarget([38.0, 20.0]);
     setMapZoom(4);
   };
 
@@ -227,34 +234,15 @@ export function TravelMap({
 
   return (
     <div className="map-container-wrapper">
-      {/* Harita Hiyerarşi & Gezinme Çubuğu */}
+      {/* Harita Katman Değiştirici & Dünya Görünümü Butonu */}
       <div className="map-level-nav">
-        <div className="level-buttons">
-          <button
-            className={`level-btn ${viewLevel === "countries" ? "active" : ""}`}
-            onClick={handleZoomToWorld}
-            type="button"
-          >
-            {t.countriesMode}
-          </button>
-          <button
-            className={`level-btn ${viewLevel === "cities" ? "active" : ""}`}
-            onClick={() => setViewLevel("cities")}
-            type="button"
-          >
-            {t.citiesMode} ({selectedCountry.bayrak} {selectedCountry.ad})
-          </button>
-        </div>
-
-        {viewLevel === "cities" && (
-          <button
-            className="zoom-out-btn"
-            onClick={handleZoomToWorld}
-            type="button"
-          >
-            {t.zoomOutWorld}
-          </button>
-        )}
+        <button
+          className="zoom-out-btn"
+          onClick={handleZoomToWorld}
+          type="button"
+        >
+          🌍 {t.zoomOutWorld}
+        </button>
       </div>
 
       <MapContainer
@@ -273,8 +261,8 @@ export function TravelMap({
       >
         <TileLayer
           attribution={MAP_STYLES[currentStyle].attribution}
-          key={currentStyle}
-          url={MAP_STYLES[currentStyle].url}
+          key={`${currentStyle}-${theme}`}
+          url={activeTileUrl}
         />
         <ZoomControl position="bottomright" />
         
@@ -285,60 +273,133 @@ export function TravelMap({
           onAddPinClick={(coords) => setNewPinCoords(coords)}
         />
 
-        {/* ÜLKELER MODU PINLERI */}
-        {viewLevel === "countries" &&
-          countries.map((country) => (
+        {/* TÜM ÜLKE PINLERİ */}
+        {countries.map((country) => (
+          <Marker
+            eventHandlers={{
+              click: () => handleCountryClick(country),
+            }}
+            icon={createCountryIcon(country)}
+            key={country.id}
+            position={country.koordinat}
+          >
+            <Popup className="dark-map-popup">
+              <div className="popup-card">
+                <h3>{country.bayrak} {country.ad}</h3>
+                <p>📍 {country.sehirSayisi} {t.places} • 👥 {country.ziyaretSayisi} {t.reviews}</p>
+
+                <div className="country-quick-actions">
+                  <button
+                    className="quick-pin-btn visited"
+                    onClick={() => {
+                      if (!isLoggedIn) {
+                        onAuthRequired?.();
+                        return;
+                      }
+                      if (onAddNewUserPin) {
+                        onAddNewUserPin({
+                          lat: country.koordinat[0],
+                          lng: country.koordinat[1],
+                          title: `${country.bayrak} ${country.ad}`,
+                          category: "visited",
+                          note: `${country.ad} ülkesine gidildi.`,
+                        });
+                      }
+                    }}
+                    type="button"
+                  >
+                    ✅ {t.visited}
+                  </button>
+
+                  <button
+                    className="quick-pin-btn wishlist"
+                    onClick={() => {
+                      if (!isLoggedIn) {
+                        onAuthRequired?.();
+                        return;
+                      }
+                      if (onAddNewUserPin) {
+                        onAddNewUserPin({
+                          lat: country.koordinat[0],
+                          lng: country.koordinat[1],
+                          title: `${country.bayrak} ${country.ad}`,
+                          category: "wishlist",
+                          note: `${country.ad} ülkesi gezi listesinde.`,
+                        });
+                      }
+                    }}
+                    type="button"
+                  >
+                    📌 {t.wishlist}
+                  </button>
+
+                  <button
+                    className="quick-pin-btn favorite"
+                    onClick={() => {
+                      if (!isLoggedIn) {
+                        onAuthRequired?.();
+                        return;
+                      }
+                      if (onAddNewUserPin) {
+                        onAddNewUserPin({
+                          lat: country.koordinat[0],
+                          lng: country.koordinat[1],
+                          title: `${country.bayrak} ${country.ad}`,
+                          category: "favorite",
+                          note: `${country.ad} ülkesi favorilerde.`,
+                        });
+                      }
+                    }}
+                    type="button"
+                  >
+                    ❤️ {t.favorite}
+                  </button>
+                </div>
+
+                <button
+                  className="outline-link compact-link"
+                  onClick={() => handleCountryClick(country)}
+                  style={{ marginTop: 10, width: "100%", justifyContent: "center" }}
+                  type="button"
+                >
+                  🔍 {country.ad} Yakınlaş
+                </button>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
+
+        {/* ŞEHİR PINLERİ */}
+        {cities
+          .filter(
+            (city) =>
+              !activeCountryId ||
+              city.countryId === activeCountryId ||
+              city.countryName === selectedCountry.ad,
+          )
+          .map((city) => {
+          const isSelected = city.id === selectedCity?.id;
+          return (
             <Marker
               eventHandlers={{
-                click: () => handleCountryClick(country),
+                click: () => handleCityClick(city),
               }}
-              icon={createCountryIcon(country)}
-              key={country.id}
-              position={country.koordinat}
+              icon={createCityIcon(isSelected, city.name, city.placesCount, selectedCountry.bayrak)}
+              key={city.id}
+              position={city.coordinates}
             >
               <Popup className="dark-map-popup">
                 <div className="popup-card">
-                  <h3>{country.bayrak} {country.ad}</h3>
-                  <p>📍 {country.sehirSayisi} {t.places}</p>
-                  <p>👥 {country.ziyaretSayisi} {t.reviews}</p>
-                  <button
-                    className="primary-link compact-link"
-                    onClick={() => handleCountryClick(country)}
-                    style={{ marginTop: 8, width: "100%" }}
-                    type="button"
-                  >
-                    {t.openGuide}
-                  </button>
+                  <h3>📍 {city.name} ({city.countryName})</h3>
+                  <p>🏛️ {city.placesCount} {t.popularPlaces}</p>
+                  <p>👥 {city.visits} {t.visitors}</p>
                 </div>
               </Popup>
             </Marker>
-          ))}
+          );
+        })}
 
-        {/* ŞEHİRLER MODU PINLERI */}
-        {viewLevel === "cities" &&
-          cities.map((city) => {
-            const isSelected = city.id === selectedCity?.id;
-            return (
-              <Marker
-                eventHandlers={{
-                  click: () => handleCityClick(city),
-                }}
-                icon={createCityIcon(isSelected, city.name, city.placesCount)}
-                key={city.id}
-                position={city.coordinates}
-              >
-                <Popup className="dark-map-popup">
-                  <div className="popup-card">
-                    <h3>📍 {city.name} ({city.countryName})</h3>
-                    <p>🏛️ {city.placesCount} {t.popularPlaces}</p>
-                    <p>👥 {city.visits} {t.visitors}</p>
-                  </div>
-                </Popup>
-              </Marker>
-            );
-          })}
-
-        {/* Kullanici Pinleri */}
+        {/* Kullanıcı Pinleri */}
         {userPins.map((pin) => (
           <Marker
             icon={createUserPinIcon(pin.category)}
@@ -360,34 +421,26 @@ export function TravelMap({
             </Popup>
           </Marker>
         ))}
-
-        {/* Yeni Pin Taslagi */}
-        {newPinCoords && (
-          <Marker
-            icon={createUserPinIcon(newPinCategory)}
-            position={[newPinCoords.lat, newPinCoords.lng]}
-          />
-        )}
       </MapContainer>
 
-      {/* Harita Stili Değiştirici (Sağ Üst) */}
-      <div className="map-style-switcher" aria-label="Harita Görünüm Seçimi">
-        {(Object.keys(MAP_STYLES) as Array<keyof typeof MAP_STYLES>).map((key) => (
+      {/* Harita Stili Seçim Paneli (Sağ Üst) */}
+      <div className="map-style-selector">
+        {Object.entries(MAP_STYLES).map(([key, style]) => (
           <button
             className={`style-btn ${currentStyle === key ? "active" : ""}`}
             key={key}
-            onClick={() => setCurrentStyle(key)}
+            onClick={() => setCurrentStyle(key as keyof typeof MAP_STYLES)}
             type="button"
           >
-            {MAP_STYLES[key].name}
+            {style.name}
           </button>
         ))}
       </div>
 
-      {/* Yeni Pin Oluşturma Paneli Modal */}
+      {/* Yeni Pin Ekleme Modalı */}
       {newPinCoords && (
         <div className="pin-modal-overlay">
-          <form className="pin-modal" onSubmit={handleCreatePin}>
+          <div className="pin-modal">
             <button
               className="modal-close"
               onClick={() => setNewPinCoords(null)}
@@ -395,73 +448,74 @@ export function TravelMap({
             >
               ✕
             </button>
-            <h3>{t.newPinTitle}</h3>
+            <h3>📍 Yeni Harita Pini Ekle</h3>
             <p className="coords-info">
-              {newPinCoords.lat.toFixed(4)}, {newPinCoords.lng.toFixed(4)}
+              Koordinat: {newPinCoords.lat.toFixed(4)}, {newPinCoords.lng.toFixed(4)}
             </p>
 
-            <label>
-              <span>{t.placeName}</span>
-              <input
-                autoFocus
-                onChange={(e) => setNewPinTitle(e.target.value)}
-                placeholder={t.placeNamePlaceholder}
-                required
-                type="text"
-                value={newPinTitle}
-              />
-            </label>
+            <form onSubmit={handleCreatePin}>
+              <label>
+                Mekan / Şehir Adı
+                <input
+                  autoFocus
+                  onChange={(e) => setNewPinTitle(e.target.value)}
+                  placeholder="Örn: Kapadokya Balon Seyir Tepesi"
+                  required
+                  value={newPinTitle}
+                />
+              </label>
 
-            <label>
-              <span>{t.categoryStatus}</span>
-              <div className="category-options">
+              <label>
+                Pin Türü
+                <div className="category-options">
+                  <button
+                    className={newPinCategory === "visited" ? "selected visited" : ""}
+                    onClick={() => setNewPinCategory("visited")}
+                    type="button"
+                  >
+                    ✅ Gittim
+                  </button>
+                  <button
+                    className={newPinCategory === "wishlist" ? "selected wishlist" : ""}
+                    onClick={() => setNewPinCategory("wishlist")}
+                    type="button"
+                  >
+                    📌 Rota Listemde
+                  </button>
+                  <button
+                    className={newPinCategory === "favorite" ? "selected favorite" : ""}
+                    onClick={() => setNewPinCategory("favorite")}
+                    type="button"
+                  >
+                    ❤️ Favorim
+                  </button>
+                </div>
+              </label>
+
+              <label>
+                Notun (İsteğe Bağlı)
+                <textarea
+                  onChange={(e) => setNewPinNote(e.target.value)}
+                  placeholder="Bu harika mekan hakkındaki anın veya notun..."
+                  rows={3}
+                  value={newPinNote}
+                />
+              </label>
+
+              <div className="modal-actions">
                 <button
-                  className={newPinCategory === "visited" ? "selected visited" : ""}
-                  onClick={() => setNewPinCategory("visited")}
+                  className="cancel-btn"
+                  onClick={() => setNewPinCoords(null)}
                   type="button"
                 >
-                  {t.visited}
+                  İptal
                 </button>
-                <button
-                  className={newPinCategory === "wishlist" ? "selected wishlist" : ""}
-                  onClick={() => setNewPinCategory("wishlist")}
-                  type="button"
-                >
-                  {t.wishlist}
-                </button>
-                <button
-                  className={newPinCategory === "favorite" ? "selected favorite" : ""}
-                  onClick={() => setNewPinCategory("favorite")}
-                  type="button"
-                >
-                  {t.favorite}
+                <button className="primary-link" type="submit">
+                  Pini Kaydet ✨
                 </button>
               </div>
-            </label>
-
-            <label>
-              <span>Not / Anı</span>
-              <textarea
-                onChange={(e) => setNewPinNote(e.target.value)}
-                placeholder={t.notePlaceholder}
-                rows={2}
-                value={newPinNote}
-              />
-            </label>
-
-            <div className="modal-actions">
-              <button
-                className="cancel-btn"
-                onClick={() => setNewPinCoords(null)}
-                type="button"
-              >
-                {t.cancel}
-              </button>
-              <button className="save-btn" type="submit">
-                {t.savePin}
-              </button>
-            </div>
-          </form>
+            </form>
+          </div>
         </div>
       )}
     </div>

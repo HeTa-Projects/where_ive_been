@@ -265,6 +265,8 @@ a {
   z-index: 600;
 }
 
+
+
 .map-loading {
   display: flex;
   align-items: center;
@@ -1860,6 +1862,47 @@ select option {
   white-space: nowrap;
 }
 
+/* City Map Pin & Flag Icon Styling */
+.pin-label {
+  position: absolute;
+  top: 36px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-glass);
+  color: var(--text-main);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.city-flag-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.custom-map-pin-active .pin-label {
+  border-color: var(--accent-emerald);
+  color: var(--accent-emerald);
+  box-shadow: 0 0 16px var(--accent-emerald-glow);
+}
+
+.filter-chip,
+.level-btn {
+  white-space: nowrap;
+  max-width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .filter-chip-divider {
   color: rgba(255, 255, 255, 0.2);
   align-self: center;
@@ -1925,49 +1968,67 @@ select option {
   transform: translateY(-2px);
 }
 
-/* Custom Country Markers */
-.custom-country-pin {
-  position: relative;
-  cursor: pointer;
+/* Custom Country & City Markers */
+.custom-country-pin-wrapper,
+.custom-city-pin-wrapper {
+  background: transparent !important;
+  border: none !important;
+  overflow: visible !important;
 }
 
-.country-bubble {
-  display: flex;
+.country-bubble,
+.city-bubble {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
   background: rgba(15, 23, 42, 0.92);
-  backdrop-filter: blur(12px);
-  border: 1.5px solid var(--accent-emerald);
+  backdrop-filter: blur(16px);
+  border: 1.5px solid var(--border-glass);
   border-radius: var(--radius-full);
   padding: 6px 14px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+  color: var(--text-main);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  width: max-content;
+}
+
+.country-bubble:hover,
+.city-bubble:hover,
+.city-bubble.active {
+  border-color: var(--accent-emerald);
+  background: rgba(15, 23, 42, 0.98);
+  box-shadow: 0 0 20px var(--accent-emerald-glow);
+  transform: scale(1.08);
+}
+
+.country-flag,
+.city-flag {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.country-name,
+.city-name {
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffffff;
   white-space: nowrap;
 }
 
-.custom-country-pin:hover .country-bubble {
-  transform: scale(1.15);
-  border-color: var(--accent-cyan);
-  box-shadow: 0 0 25px var(--accent-cyan-glow);
-}
-
-.country-flag {
-  font-size: 18px;
-}
-
-.country-name {
-  font-size: 14px;
-  font-weight: 800;
-  color: var(--text-main);
-}
-
-.country-count {
+.country-count,
+.city-count {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--accent-emerald);
   background: rgba(16, 185, 129, 0.15);
-  padding: 2px 8px;
+  padding: 2px 7px;
   border-radius: var(--radius-full);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  white-space: nowrap;
 }
 
 .country-pulse {
@@ -1980,6 +2041,48 @@ select option {
   background: rgba(16, 185, 129, 0.3);
   animation: pulseGlow 2s infinite ease-in-out;
   pointer-events: none;
+}
+
+.country-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.quick-pin-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-glass);
+  color: var(--text-main);
+  border-radius: var(--radius-md);
+  padding: 8px 4px;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.quick-pin-btn.visited:hover {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: var(--accent-emerald);
+  color: var(--accent-emerald);
+}
+
+.quick-pin-btn.wishlist:hover {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: var(--accent-amber);
+  color: var(--accent-amber);
+}
+
+.quick-pin-btn.favorite:hover {
+  background: rgba(244, 63, 94, 0.2);
+  border-color: var(--accent-coral);
+  color: var(--accent-coral);
 }
 
 .style-btn {

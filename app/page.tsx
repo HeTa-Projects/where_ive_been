@@ -29,6 +29,7 @@ export default function Home() {
   const [seciliSehirId, setSeciliSehirId] = useState<string | null>(null);
   const [userPins, setUserPins] = useState<UserPin[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Kullanıcının kendi kaydettiği pinleri hesaba özel yükle
   useEffect(() => {
@@ -88,13 +89,17 @@ export default function Home() {
     ) ?? 0;
 
   const handleAddNewUserPin = (pinData: Omit<UserPin, "id">) => {
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
     const newPin: UserPin = {
       ...pinData,
       id: `pin-${Date.now()}`,
     };
     const updated = [newPin, ...userPins];
     setUserPins(updated);
-    const storageKey = `whib_user_pins_${user?.uid || "guest"}`;
+    const storageKey = `whib_user_pins_${user.uid}`;
     localStorage.setItem(storageKey, JSON.stringify(updated));
   };
 
@@ -108,26 +113,8 @@ export default function Home() {
       <Navbar mekanHref={`/mekanlar/${seciliSehir?.id ?? sehirler[0].id}`} />
 
       <section className="map-hero" aria-label="Harita gezgin ekranı">
-        {/* Ülke Seçim Butonları & Kategori Filtre Çubuğu */}
+        {/* Kategori Filtre Çubuğu */}
         <div className="map-top-bar">
-          {/* Satır 1: Ülke Seçicileri */}
-          <div className="country-chips-row">
-            <span className="filter-chip-label">🌍 {t.countriesLabel}</span>
-            <div className="chips-scroll-container">
-              {ulkeler.map((u) => (
-                <button
-                  className={`filter-chip ${selectedCountry.id === u.id ? "active" : ""}`}
-                  key={u.id}
-                  onClick={() => handleSelectCountry(u)}
-                  type="button"
-                >
-                  {u.bayrak} {u.ad}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Satır 2: Kategori Filtreleri & Taktik İpucu */}
           <div className="category-chips-row">
             <div className="category-filters">
               <button
@@ -162,7 +149,9 @@ export default function Home() {
         <TravelMap
           cities={haritaSehirleri}
           countries={ulkeler}
+          isLoggedIn={!!user}
           onAddNewUserPin={handleAddNewUserPin}
+          onAuthRequired={() => setShowAuthModal(true)}
           onSelectCity={setSeciliSehirId}
           onSelectCountry={handleSelectCountry}
           selectedCity={seciliHaritaSehri}
@@ -227,6 +216,29 @@ export default function Home() {
               {seciliSehir.ad} {t.openGuide}
             </Link>
           </aside>
+        )}
+
+        {showAuthModal && (
+          <div className="pin-modal-overlay" onClick={() => setShowAuthModal(false)}>
+            <div className="pin-modal auth-required-modal" onClick={(e) => e.stopPropagation()}>
+              <button className="modal-close" onClick={() => setShowAuthModal(false)}>✕</button>
+              <div className="auth-modal-header" style={{ textAlign: "center" }}>
+                <span style={{ fontSize: "42px", display: "block", marginBottom: "12px" }}>🔒</span>
+                <h3 style={{ margin: "0 0 8px 0", fontSize: "20px", color: "var(--accent-emerald)" }}>Giriş Yapmanız Gerekiyor</h3>
+                <p style={{ margin: "0 0 20px 0", fontSize: "14px", color: "var(--text-muted)", lineHeight: 1.5 }}>
+                  Gittim, Gitmek İstiyorum veya Favorim olarak rotanıza eklemek ve haritanızı kaydetmek için lütfen hesabınıza giriş yapın.
+                </p>
+              </div>
+              <div className="modal-actions" style={{ display: "flex", gap: "10px" }}>
+                <Link href="/giris" className="primary-link" style={{ flex: 1, textAlign: "center", textDecoration: "none", display: "inline-block" }}>
+                  🔑 Giriş Yap
+                </Link>
+                <Link href="/kayit" className="outline-link" style={{ flex: 1, textAlign: "center", textDecoration: "none", display: "inline-block" }}>
+                  ✨ Ücretsiz Kayıt Ol
+                </Link>
+              </div>
+            </div>
+          </div>
         )}
       </section>
     </main>
