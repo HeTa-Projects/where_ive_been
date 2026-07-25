@@ -194,10 +194,16 @@ export function TravelMap({
   const [newPinNote, setNewPinNote] = useState("");
 
   const handleCountryClick = (country: Ulke) => {
+    onSelectCountry(country);
+    setMapTarget([country.koordinat[0], country.koordinat[1]]);
+    setMapZoom(country.zoom || 6);
+  };
+
+  const handleShowCountryCities = (country: Ulke) => {
     setActiveCountryId(country.id);
     onSelectCountry(country);
     setMapTarget([country.koordinat[0], country.koordinat[1]]);
-    setMapZoom(country.zoom || 7);
+    setMapZoom(country.zoom || 8);
   };
 
   const handleCityClick = (city: CityMapPoint) => {
@@ -364,11 +370,11 @@ export function TravelMap({
 
                 <button
                   className="outline-link compact-link"
-                  onClick={() => handleCountryClick(country)}
+                  onClick={() => handleShowCountryCities(country)}
                   style={{ marginTop: 10, width: "100%", justifyContent: "center" }}
                   type="button"
                 >
-                  🔍 {country.ad} Yakınlaş
+                  🔍 {country.ad} Şehirlerini Gör
                 </button>
               </div>
             </Popup>
