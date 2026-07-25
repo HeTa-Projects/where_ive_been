@@ -63,12 +63,29 @@ const MAP_STYLES = {
   },
 };
 
-function createCountryIcon(country: Ulke) {
+function createCountryIcon(
+  country: Ulke,
+  mark?: "visited" | "wishlist" | "favorite",
+) {
   const flagUrl = ulkeBayrakUrl(country.id);
+  const markSymbol =
+    mark === "visited"
+      ? "✅"
+      : mark === "wishlist"
+      ? "📌"
+      : mark === "favorite"
+      ? "❤️"
+      : null;
+
+  const badgeHtml = markSymbol
+    ? `<div class="cpin-country-badge">${markSymbol}</div>`
+    : "";
+
   return L.divIcon({
     className: "custom-country-pin-wrapper",
     html: `
-      <div class="cpin-country">
+      <div class="cpin-country${mark ? ` mark-${mark}` : ""}">
+        ${badgeHtml}
         <img src="${flagUrl}" class="cpin-flag" />
         <span class="cpin-label">${country.ad}</span>
         <div class="cpin-tail"></div>
@@ -80,15 +97,38 @@ function createCountryIcon(country: Ulke) {
   });
 }
 
-function createCityIcon(isSelected: boolean, cityName: string, placesCount: number, countryId?: string) {
+function createCityIcon(
+  isSelected: boolean,
+  cityName: string,
+  placesCount: number,
+  countryId?: string,
+  mark?: "visited" | "wishlist" | "favorite",
+) {
   const flagUrl = countryId ? ulkeBayrakUrl(countryId) : "";
-  const cls = isSelected ? "cpin-city active" : "cpin-city";
+  const markCls = mark ? ` mark-${mark}` : "";
+  const cls = `cpin-city${isSelected ? " active" : ""}${markCls}`;
+
+  const markSymbol =
+    mark === "visited"
+      ? "✅"
+      : mark === "wishlist"
+      ? "📌"
+      : mark === "favorite"
+      ? "❤️"
+      : null;
+
+  const dotContent = markSymbol
+    ? `<span class="cpin-mark-emoji">${markSymbol}</span>`
+    : flagUrl
+    ? `<img src="${flagUrl}" class="cpin-marker-flag" />`
+    : `<span class="cpin-marker-dot">●</span>`;
+
   return L.divIcon({
     className: "custom-city-pin-wrapper",
     html: `
       <div class="${cls}">
         <div class="cpin-marker">
-          ${flagUrl ? `<img src="${flagUrl}" class="cpin-marker-flag" />` : `<span class="cpin-marker-dot">●</span>`}
+          ${dotContent}
         </div>
         <div class="cpin-city-label">
           <span class="cpin-city-name">${cityName}</span>
@@ -121,9 +161,9 @@ function createUserPinIcon(type: "visited" | "wishlist" | "favorite") {
         <span>${icons[type]}</span>
       </div>
     `,
-    iconAnchor: [14, 28],
-    iconSize: [28, 28],
-    popupAnchor: [0, -28],
+    iconAnchor: [16, 16],
+    iconSize: [32, 32],
+    popupAnchor: [0, -20],
   });
 }
 
@@ -301,107 +341,114 @@ export function TravelMap({
 
         {/* TÜM ÜLKE PINLERİ - Şehirler gösterilirken ülke pinleri gizlenir */}
         {!activeCountryId &&
-          countries.map((country) => (
-          <Marker
-            eventHandlers={{
-              click: () => handleCountryClick(country),
-            }}
-            icon={createCountryIcon(country)}
-            key={country.id}
-            position={country.koordinat}
-          >
-            <Popup autoPan={false} className="dark-map-popup">
-              <div className="popup-card">
-                <h3>
-                  <img
-                    alt={country.ad}
-                    className="popup-flag-img"
-                    src={ulkeBayrakUrl(country.id)}
-                  />
-                  {country.ad}
-                </h3>
-                <p>📍 {country.sehirSayisi} {t.places} • 👥 {country.ziyaretSayisi} {t.reviews}</p>
+          countries.map((country) => {
+            const countryMark = userPins.find(
+              (p) =>
+                Math.abs(p.lat - country.koordinat[0]) < 0.02 &&
+                Math.abs(p.lng - country.koordinat[1]) < 0.02,
+            )?.category;
+            return (
+              <Marker
+                eventHandlers={{
+                  click: () => handleCountryClick(country),
+                }}
+                icon={createCountryIcon(country, countryMark)}
+                key={country.id}
+                position={country.koordinat}
+              >
+                <Popup autoPan={false} className="dark-map-popup">
+                  <div className="popup-card">
+                    <h3>
+                      <img
+                        alt={country.ad}
+                        className="popup-flag-img"
+                        src={ulkeBayrakUrl(country.id)}
+                      />
+                      {country.ad}
+                    </h3>
+                    <p>📍 {country.sehirSayisi} {t.places} • 👥 {country.ziyaretSayisi} {t.reviews}</p>
 
-                <div className="country-quick-actions">
-                  <button
-                    className="quick-pin-btn visited"
-                    onClick={() => {
-                      if (!isLoggedIn) {
-                        onAuthRequired?.();
-                        return;
-                      }
-                      if (onAddNewUserPin) {
-                        onAddNewUserPin({
-                          lat: country.koordinat[0],
-                          lng: country.koordinat[1],
-                          title: `${country.bayrak} ${country.ad}`,
-                          category: "visited",
-                          note: `${country.ad} ülkesine gidildi.`,
-                        });
-                      }
-                    }}
-                    type="button"
-                  >
-                    ✅ {t.visited}
-                  </button>
+                    <div className="country-quick-actions">
+                      <button
+                        className="quick-pin-btn visited"
+                        onClick={() => {
+                          if (!isLoggedIn) {
+                            onAuthRequired?.();
+                            return;
+                          }
+                          if (onAddNewUserPin) {
+                            onAddNewUserPin({
+                              lat: country.koordinat[0],
+                              lng: country.koordinat[1],
+                              title: `${country.bayrak} ${country.ad}`,
+                              category: "visited",
+                              note: `${country.ad} ülkesine gidildi.`,
+                            });
+                          }
+                        }}
+                        type="button"
+                      >
+                        ✅ {t.visited}
+                      </button>
 
-                  <button
-                    className="quick-pin-btn wishlist"
-                    onClick={() => {
-                      if (!isLoggedIn) {
-                        onAuthRequired?.();
-                        return;
-                      }
-                      if (onAddNewUserPin) {
-                        onAddNewUserPin({
-                          lat: country.koordinat[0],
-                          lng: country.koordinat[1],
-                          title: `${country.bayrak} ${country.ad}`,
-                          category: "wishlist",
-                          note: `${country.ad} ülkesi gezi listesinde.`,
-                        });
-                      }
-                    }}
-                    type="button"
-                  >
-                    📌 {t.wishlist}
-                  </button>
+                      <button
+                        className="quick-pin-btn wishlist"
+                        onClick={() => {
+                          if (!isLoggedIn) {
+                            onAuthRequired?.();
+                            return;
+                          }
+                          if (onAddNewUserPin) {
+                            onAddNewUserPin({
+                              lat: country.koordinat[0],
+                              lng: country.koordinat[1],
+                              title: `${country.bayrak} ${country.ad}`,
+                              category: "wishlist",
+                              note: `${country.ad} ülkesi gezi listesinde.`,
+                            });
+                          }
+                        }}
+                        type="button"
+                      >
+                        📌 {t.wishlist}
+                      </button>
 
-                  <button
-                    className="quick-pin-btn favorite"
-                    onClick={() => {
-                      if (!isLoggedIn) {
-                        onAuthRequired?.();
-                        return;
-                      }
-                      if (onAddNewUserPin) {
-                        onAddNewUserPin({
-                          lat: country.koordinat[0],
-                          lng: country.koordinat[1],
-                          title: `${country.bayrak} ${country.ad}`,
-                          category: "favorite",
-                          note: `${country.ad} ülkesi favorilerde.`,
-                        });
-                      }
-                    }}
-                    type="button"
-                  >
-                    ❤️ {t.favorite}
-                  </button>
-                </div>
+                      <button
+                        className="quick-pin-btn favorite"
+                        onClick={() => {
+                          if (!isLoggedIn) {
+                            onAuthRequired?.();
+                            return;
+                          }
+                          if (onAddNewUserPin) {
+                            onAddNewUserPin({
+                              lat: country.koordinat[0],
+                              lng: country.koordinat[1],
+                              title: `${country.bayrak} ${country.ad}`,
+                              category: "favorite",
+                              note: `${country.ad} ülkesi favorilerde.`,
+                            });
+                          }
+                        }}
+                        type="button"
+                      >
+                        ❤️ {t.favorite}
+                      </button>
+                    </div>
 
-                <button
-                  className="outline-link compact-link"
-                  onClick={() => handleShowCountryCities(country)}
-                  style={{ marginTop: 10, width: "100%", justifyContent: "center" }}
-                  type="button"
-                >
-                  🔍 {country.ad} Şehirlerini Gör
-                </button>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+                    <button
+                      className="outline-link compact-link"
+                      onClick={() => handleShowCountryCities(country)}
+                      style={{ marginTop: 10, width: "100%", justifyContent: "center" }}
+                      type="button"
+                    >
+                      🔍 {country.ad} Şehirlerini Gör
+                    </button>
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
 
         {/* ŞEHİR PINLERİ - Sadece bir ülkeye Yakınlaş denildiğinde görünür */}
         {activeCountryId &&
@@ -409,6 +456,11 @@ export function TravelMap({
             .filter((city) => city.countryId === activeCountryId)
             .map((city) => {
               const isSelected = city.id === selectedCity?.id;
+              const cityMark = userPins.find(
+                (p) =>
+                  Math.abs(p.lat - city.coordinates[0]) < 0.02 &&
+                  Math.abs(p.lng - city.coordinates[1]) < 0.02,
+              )?.category;
               return (
                 <Marker
                   eventHandlers={{
@@ -419,6 +471,7 @@ export function TravelMap({
                     city.name,
                     city.placesCount,
                     city.countryId,
+                    cityMark,
                   )}
                   key={city.id}
                   position={city.coordinates}
@@ -501,8 +554,22 @@ export function TravelMap({
               );
             })}
 
-        {/* Kullanıcı Pinleri */}
-        {userPins.map((pin) => (
+        {/* Kullanıcı Pinleri (Yalnızca şehir ve ülkelerle çakışmayan özel konumlar) */}
+        {userPins
+          .filter((pin) => {
+            const isCityMatch = cities.some(
+              (c) =>
+                Math.abs(c.coordinates[0] - pin.lat) < 0.02 &&
+                Math.abs(c.coordinates[1] - pin.lng) < 0.02,
+            );
+            const isCountryMatch = countries.some(
+              (c) =>
+                Math.abs(c.koordinat[0] - pin.lat) < 0.02 &&
+                Math.abs(c.koordinat[1] - pin.lng) < 0.02,
+            );
+            return !isCityMatch && !isCountryMatch;
+          })
+          .map((pin) => (
           <Marker
             icon={createUserPinIcon(pin.category)}
             key={pin.id}
