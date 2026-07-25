@@ -6,9 +6,11 @@ export const metadata: Metadata = {
   title: "Where I've Been",
   description:
     "Gezilen şehirleri, mekan yorumlarını ve puanları harita üzerinde toplayan gezi uygulaması.",
+  manifest: "/manifest.json",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
   },
 };
 
