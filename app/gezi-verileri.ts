@@ -560,3 +560,59 @@ export const sehirler: Sehir[] = [
 export function sehirBul(id: string): Sehir | undefined {
   return sehirler.find((s) => s.id === id);
 }
+
+const ULKE_KODLARI: Record<string, string> = {
+  turkiye: "tr",
+  italya: "it",
+  japonya: "jp",
+  fransa: "fr",
+  ispanya: "es",
+  abd: "us",
+  ingiltere: "gb",
+  almanya: "de",
+  yunanistan: "gr",
+  misir: "eg",
+  hollanda: "nl",
+  isvicre: "ch",
+  avusturya: "at",
+  portekiz: "pt",
+  belcika: "be",
+  isvec: "se",
+  norvec: "no",
+  finlandiya: "fi",
+  izlanda: "is",
+  cekya: "cz",
+  macaristan: "hu",
+  polonya: "pl",
+  hirvatistan: "hr",
+  karadag: "me",
+  kanada: "ca",
+  meksika: "mx",
+  brezilya: "br",
+  arjantin: "ar",
+  guneykore: "kr",
+  tayland: "th",
+  endonezya: "id",
+  vietnam: "vn",
+  singapur: "sg",
+  malezya: "my",
+  bae: "ae",
+  katar: "qa",
+  suudiarabistan: "sa",
+  urdun: "jo",
+  fas: "ma",
+  guneyafrika: "za",
+  avustralya: "au",
+  yenizelanda: "nz",
+  gurcistan: "ge",
+  azerbaycan: "az",
+  ukrayna: "ua",
+  rusya: "ru",
+  cin: "cn",
+  hindistan: "in",
+};
+
+export function ulkeBayrakUrl(ulkeId: string): string {
+  const code = ULKE_KODLARI[ulkeId.toLowerCase()] || "tr";
+  return `https://flagcdn.com/w40/${code}.png`;
+}

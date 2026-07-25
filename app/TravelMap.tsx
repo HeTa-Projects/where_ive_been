@@ -13,6 +13,7 @@ import {
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import type { Ulke } from "./gezi-verileri";
+import { ulkeBayrakUrl } from "./gezi-verileri";
 import { useThemeAndLang } from "./ThemeAndLangProvider";
 
 export type CityMapPoint = {
@@ -63,11 +64,12 @@ const MAP_STYLES = {
 };
 
 function createCountryIcon(country: Ulke) {
+  const flagUrl = ulkeBayrakUrl(country.id);
   return L.divIcon({
     className: "custom-country-pin-wrapper",
     html: `
       <div class="country-bubble">
-        <span class="country-flag">${country.bayrak}</span>
+        <img src="${flagUrl}" alt="${country.ad}" class="flag-icon-img" />
         <span class="country-name">${country.ad}</span>
       </div>
     `,
@@ -77,12 +79,13 @@ function createCountryIcon(country: Ulke) {
   });
 }
 
-function createCityIcon(isSelected: boolean, cityName: string, placesCount: number, countryFlag?: string) {
+function createCityIcon(isSelected: boolean, cityName: string, placesCount: number, countryId?: string) {
+  const flagUrl = countryId ? ulkeBayrakUrl(countryId) : "";
   return L.divIcon({
     className: "custom-city-pin-wrapper",
     html: `
       <div class="city-bubble ${isSelected ? "active" : ""}">
-        <span class="city-flag">${countryFlag || "📍"}</span>
+        ${flagUrl ? `<img src="${flagUrl}" alt="${cityName}" class="flag-icon-img" />` : `<span class="city-flag">📍</span>`}
         <span class="city-name">${cityName}</span>
         <span class="city-count">${placesCount}</span>
       </div>
@@ -285,7 +288,14 @@ export function TravelMap({
           >
             <Popup className="dark-map-popup">
               <div className="popup-card">
-                <h3>{country.bayrak} {country.ad}</h3>
+                <h3>
+                  <img
+                    alt={country.ad}
+                    className="popup-flag-img"
+                    src={ulkeBayrakUrl(country.id)}
+                  />
+                  {country.ad}
+                </h3>
                 <p>📍 {country.sehirSayisi} {t.places} • 👥 {country.ziyaretSayisi} {t.reviews}</p>
 
                 <div className="country-quick-actions">
@@ -384,7 +394,7 @@ export function TravelMap({
               eventHandlers={{
                 click: () => handleCityClick(city),
               }}
-              icon={createCityIcon(isSelected, city.name, city.placesCount, selectedCountry.bayrak)}
+              icon={createCityIcon(isSelected, city.name, city.placesCount, city.countryId || selectedCountry.id)}
               key={city.id}
               position={city.coordinates}
             >

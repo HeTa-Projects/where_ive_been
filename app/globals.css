@@ -2011,6 +2011,27 @@ select option {
   line-height: 1;
 }
 
+/* HD Country Flag Image Badges */
+.flag-icon-img {
+  width: 20px;
+  height: 14px;
+  object-fit: cover;
+  border-radius: 3px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.popup-flag-img {
+  width: 24px;
+  height: 17px;
+  object-fit: cover;
+  border-radius: 3px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
 .country-name,
 .city-name {
   font-size: 13px;
