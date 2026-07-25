@@ -1,9 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  addDoc,
+  collection,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+  where,
+} from "firebase/firestore";
 import { Navbar } from "../../Navbar";
 import { useAuth } from "../../AuthProvider";
+import { db } from "../../firebase";
 import { sehirler } from "../../gezi-verileri";
 import type { Sehir, Yorum } from "../../gezi-verileri";
 
@@ -38,15 +48,61 @@ export function MekanRehberiClient({
     [sehir.mekanlar, seciliMekanId],
   );
 
+  // Firestore Live Reviews Sync
+  useEffect(() => {
+    if (!db || !seciliMekan.id) return;
+
+    try {
+      const q = query(
+        collection(db, "place_reviews"),
+        where("placeId", "==", seciliMekan.id),
+      );
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteYorumlar: Yorum[] = snapshot.docs.map((docSnap) => {
+            const data = docSnap.data();
+            return {
+              id: docSnap.id,
+              yazar: data.yazar || "Gezgin Kullanıcı",
+              puan: Number(data.puan) || 5,
+              metin: data.metin || "",
+              tarih: data.createdAt?.toDate
+                ? data.createdAt.toDate().toLocaleDateString("tr-TR")
+                : "Şimdi",
+            };
+          });
+
+          setYorumlarMap((prev) => {
+            const initialForPlace = seciliMekan.yorumlar;
+            const combined = [...remoteYorumlar];
+            initialForPlace.forEach((init) => {
+              if (!combined.some((c) => c.id === init.id)) {
+                combined.push(init);
+              }
+            });
+            return {
+              ...prev,
+              [seciliMekan.id]: combined,
+            };
+          });
+        }
+      });
+      return () => unsubscribe();
+    } catch (err) {
+      console.warn("Firestore reviews sync error:", err);
+    }
+  }, [seciliMekan.id, seciliMekan.yorumlar]);
+
   const mevcutYorumlar = yorumlarMap[seciliMekan.id] ?? seciliMekan.yorumlar;
 
-  const handleAddYorum = (e: React.FormEvent) => {
+  const handleAddYorum = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!yeniMetin.trim()) return;
 
+    const yazarAd = user?.displayName || user?.email?.split("@")[0] || "Gezgin Kullanıcı";
     const yeniYorum: Yorum = {
       id: `yrm-${Date.now()}`,
-      yazar: user?.displayName || user?.email?.split("@")[0] || "Gezgin Kullanıcı",
+      yazar: yazarAd,
       puan: yeniPuan,
       metin: yeniMetin.trim(),
       tarih: "Şimdi",
@@ -56,6 +112,20 @@ export function MekanRehberiClient({
       ...prev,
       [seciliMekan.id]: [yeniYorum, ...(prev[seciliMekan.id] || [])],
     }));
+
+    if (db) {
+      try {
+        await addDoc(collection(db, "place_reviews"), {
+          placeId: seciliMekan.id,
+          yazar: yazarAd,
+          puan: yeniPuan,
+          metin: yeniMetin.trim(),
+          createdAt: serverTimestamp(),
+        });
+      } catch (err) {
+        console.error("Firestore comment add error:", err);
+      }
+    }
 
     setYeniMetin("");
     setYeniPuan(5);

@@ -3,8 +3,10 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { Navbar } from "./Navbar";
 import { useAuth } from "./AuthProvider";
+import { db } from "./firebase";
 import { useThemeAndLang } from "./ThemeAndLangProvider";
 import { sehirler, ulkeler } from "./gezi-verileri";
 import type { Sehir, Ulke } from "./gezi-verileri";
@@ -31,9 +33,23 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [showAuthModal, setShowAuthModal] = useState(false);
 
-  // Kullanıcının kendi kaydettiği pinleri hesaba özel yükle
+  // Kullanıcının kaydettiği pinleri Firestore & LocalStorage senkronize et
   useEffect(() => {
-    const storageKey = `whib_user_pins_${user?.uid || "guest"}`;
+    if (!user) {
+      const saved = localStorage.getItem("whib_user_pins_guest");
+      if (saved) {
+        try {
+          setUserPins(JSON.parse(saved));
+        } catch {
+          setUserPins([]);
+        }
+      } else {
+        setUserPins([]);
+      }
+      return;
+    }
+
+    const storageKey = `whib_user_pins_${user.uid}`;
     const saved = localStorage.getItem(storageKey);
     if (saved) {
       try {
@@ -41,10 +57,32 @@ export default function Home() {
       } catch {
         setUserPins([]);
       }
-    } else {
-      setUserPins([]);
     }
-  }, [user?.uid]);
+
+    if (db) {
+      try {
+        const userRef = doc(db, "users", user.uid);
+        const unsubscribe = onSnapshot(
+          userRef,
+          (docSnap) => {
+            if (docSnap.exists()) {
+              const data = docSnap.data();
+              if (Array.isArray(data.pins)) {
+                setUserPins(data.pins);
+                localStorage.setItem(storageKey, JSON.stringify(data.pins));
+              }
+            }
+          },
+          (err) => {
+            console.warn("Firestore pins sync error:", err);
+          },
+        );
+        return () => unsubscribe();
+      } catch (err) {
+        console.warn("Firestore connection error:", err);
+      }
+    }
+  }, [user]);
 
   const ulkeSehirleri = useMemo(() => {
     return sehirler.filter((s) => s.ulkeId === selectedCountry.id);
@@ -88,7 +126,7 @@ export default function Home() {
       0,
     ) ?? 0;
 
-  const handleAddNewUserPin = (pinData: Omit<UserPin, "id">) => {
+  const handleAddNewUserPin = async (pinData: Omit<UserPin, "id">) => {
     if (!user) {
       setShowAuthModal(true);
       return;
@@ -101,14 +139,30 @@ export default function Home() {
     setUserPins(updated);
     const storageKey = `whib_user_pins_${user.uid}`;
     localStorage.setItem(storageKey, JSON.stringify(updated));
+
+    if (db) {
+      try {
+        await setDoc(doc(db, "users", user.uid), { pins: updated }, { merge: true });
+      } catch (err) {
+        console.error("Firestore pin save error:", err);
+      }
+    }
   };
 
-  const handleDeleteUserPin = (pinId: string) => {
+  const handleDeleteUserPin = async (pinId: string) => {
     const updated = userPins.filter((pin) => pin.id !== pinId);
     setUserPins(updated);
     if (user) {
       const storageKey = `whib_user_pins_${user.uid}`;
       localStorage.setItem(storageKey, JSON.stringify(updated));
+
+      if (db) {
+        try {
+          await setDoc(doc(db, "users", user.uid), { pins: updated }, { merge: true });
+        } catch (err) {
+          console.error("Firestore pin delete error:", err);
+        }
+      }
     }
   };
 

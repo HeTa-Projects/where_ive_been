@@ -15,6 +15,7 @@ export type CustomUser = {
   uid: string;
   email: string;
   displayName: string;
+  photoURL?: string;
 };
 
 type AuthContextValue = {
@@ -40,6 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             uid: fbUser.uid,
             email: fbUser.email || "gezgin@whereivebeen.com",
             displayName: fbUser.displayName || fbUser.email?.split("@")[0] || "Gezgin Kullanıcı",
+            photoURL: fbUser.photoURL || undefined,
           });
         } else {
           // Check local demo session

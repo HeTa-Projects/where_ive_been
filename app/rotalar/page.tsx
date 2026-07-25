@@ -1,9 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  addDoc,
+  collection,
+  doc,
+  increment,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+  updateDoc,
+} from "firebase/firestore";
 import { Navbar } from "../Navbar";
 import { useAuth } from "../AuthProvider";
+import { db } from "../firebase";
 import { useThemeAndLang } from "../ThemeAndLangProvider";
 import { sehirler } from "../gezi-verileri";
 
@@ -70,12 +82,56 @@ export default function Rotalar() {
   const [yeniDuraklar, setYeniDuraklar] = useState("");
   const [yeniOzet, setYeniOzet] = useState("");
 
+  // Firestore Sync for Routes
+  useEffect(() => {
+    if (!db) return;
+
+    try {
+      const q = query(collection(db, "routes"), orderBy("createdAt", "desc"));
+      const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          if (!snapshot.empty) {
+            const remoteRoutes: Rota[] = snapshot.docs.map((docSnap) => {
+              const data = docSnap.data();
+              return {
+                id: docSnap.id,
+                baslik: data.baslik || "Gezi Rotası",
+                sehirAd: data.sehirAd || "İstanbul",
+                sure: data.sure || "1 Gün",
+                kategori: data.kategori || "🏛️ Tarih & Kültür",
+                yazar: data.yazar || "Gezgin Kullanıcı",
+                duraklar: Array.isArray(data.duraklar) ? data.duraklar : ["Merkez"],
+                ozet: data.ozet || "",
+                likes: Number(data.likes) || 1,
+              };
+            });
+
+            const combined = [...remoteRoutes];
+            HAZIR_ROTALAR.forEach((h) => {
+              if (!combined.some((c) => c.id === h.id)) {
+                combined.push(h);
+              }
+            });
+            setRotalar(combined);
+          }
+        },
+        (err) => {
+          console.warn("Firestore routes snapshot error:", err);
+        },
+      );
+      return () => unsubscribe();
+    } catch (err) {
+      console.warn("Firestore connection error:", err);
+    }
+  }, []);
+
   const filtrelenmisRotalar = rotalar.filter((rota) => {
     if (selectedCityFilter === "all") return true;
     return rota.sehirAd === selectedCityFilter;
   });
 
-  const handleCreateRota = (e: React.FormEvent) => {
+  const handleCreateRota = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!yeniBaslik.trim()) return;
 
@@ -84,29 +140,62 @@ export default function Rotalar() {
       .map((d) => d.trim())
       .filter(Boolean);
 
-    const yeniRota: Rota = {
+    const yazarAd = user?.displayName || user?.email?.split("@")[0] || "Gezgin Kullanıcı";
+    const duraklarData = durakListesi.length > 0 ? durakListesi : ["Popüler Merkez Durak"];
+
+    const yeniRotaState: Rota = {
       id: `rota-${Date.now()}`,
       baslik: yeniBaslik.trim(),
       sehirAd: yeniSehir,
       sure: yeniSure,
       kategori: yeniKategori,
-      yazar: user?.displayName || user?.email?.split("@")[0] || "Gezgin Kullanıcı",
-      duraklar: durakListesi.length > 0 ? durakListesi : ["Popüler Merkez Durak"],
+      yazar: yazarAd,
+      duraklar: duraklarData,
       ozet: yeniOzet.trim() || "Özel gezgin rotası.",
       likes: 1,
     };
 
-    setRotalar([yeniRota, ...rotalar]);
+    setRotalar((prev) => [yeniRotaState, ...prev]);
     setShowModal(false);
+
+    if (db) {
+      try {
+        await addDoc(collection(db, "routes"), {
+          baslik: yeniBaslik.trim(),
+          sehirAd: yeniSehir,
+          sure: yeniSure,
+          kategori: yeniKategori,
+          yazar: yazarAd,
+          duraklar: duraklarData,
+          ozet: yeniOzet.trim() || "Özel gezgin rotası.",
+          likes: 1,
+          createdAt: serverTimestamp(),
+        });
+      } catch (err) {
+        console.error("Firestore route creation error:", err);
+      }
+    }
+
     setYeniBaslik("");
     setYeniDuraklar("");
     setYeniOzet("");
   };
 
-  const handleLike = (id: string) => {
+  const handleLike = async (id: string) => {
     setRotalar((prev) =>
       prev.map((r) => (r.id === id ? { ...r, likes: r.likes + 1 } : r)),
     );
+
+    if (db && !id.startsWith("rota-") && !HAZIR_ROTALAR.some((h) => h.id === id)) {
+      try {
+        const routeRef = doc(db, "routes", id);
+        await updateDoc(routeRef, {
+          likes: increment(1),
+        });
+      } catch (err) {
+        console.error("Firestore route like error:", err);
+      }
+    }
   };
 
   return (

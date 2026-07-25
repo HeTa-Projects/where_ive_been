@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { updateProfile } from "firebase/auth";
+import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { Navbar } from "../Navbar";
 import { useAuth } from "../AuthProvider";
+import { auth, db } from "../firebase";
 import { useThemeAndLang } from "../ThemeAndLangProvider";
 import type { UserPin } from "../TravelMap";
 
@@ -37,7 +40,6 @@ export default function Profil() {
       return;
     }
 
-    // Load User Pins
     const pinsKey = `whib_user_pins_${user.uid}`;
     const savedPins = localStorage.getItem(pinsKey);
     if (savedPins) {
@@ -48,18 +50,55 @@ export default function Profil() {
       }
     }
 
-    // Load Profile Photo
     const photoKey = `whib_user_photo_${user.uid}`;
     const savedPhoto = localStorage.getItem(photoKey);
     if (savedPhoto) {
       setProfilePhoto(savedPhoto);
+    } else if (user.photoURL) {
+      setProfilePhoto(user.photoURL);
+    }
+
+    if (db) {
+      try {
+        const userRef = doc(db, "users", user.uid);
+        const unsubscribe = onSnapshot(userRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (Array.isArray(data.pins)) {
+              setUserPins(data.pins);
+              localStorage.setItem(pinsKey, JSON.stringify(data.pins));
+            }
+            if (data.photoUrl) {
+              setProfilePhoto(data.photoUrl);
+              localStorage.setItem(photoKey, data.photoUrl);
+            }
+          }
+        });
+        return () => unsubscribe();
+      } catch (err) {
+        console.warn("Firestore profile sync error:", err);
+      }
     }
   }, [user]);
 
-  const handleSavePhoto = (photoUrl: string) => {
+  const handleSavePhoto = async (photoUrl: string) => {
     setProfilePhoto(photoUrl);
     if (user) {
       localStorage.setItem(`whib_user_photo_${user.uid}`, photoUrl);
+      if (auth?.currentUser) {
+        try {
+          await updateProfile(auth.currentUser, { photoURL: photoUrl });
+        } catch (err) {
+          console.warn("Firebase Auth updateProfile error:", err);
+        }
+      }
+      if (db) {
+        try {
+          await setDoc(doc(db, "users", user.uid), { photoUrl }, { merge: true });
+        } catch (err) {
+          console.error("Firestore photo save error:", err);
+        }
+      }
     }
     setShowPhotoModal(false);
   };
@@ -77,11 +116,18 @@ export default function Profil() {
     reader.readAsDataURL(file);
   };
 
-  const handleDeletePin = (pinId: string) => {
+  const handleDeletePin = async (pinId: string) => {
     const updated = userPins.filter((p) => p.id !== pinId);
     setUserPins(updated);
     if (user) {
       localStorage.setItem(`whib_user_pins_${user.uid}`, JSON.stringify(updated));
+      if (db) {
+        try {
+          await setDoc(doc(db, "users", user.uid), { pins: updated }, { merge: true });
+        } catch (err) {
+          console.error("Firestore pin delete error:", err);
+        }
+      }
     }
   };
 
