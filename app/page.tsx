@@ -4,8 +4,8 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Navbar } from "./Navbar";
-import { sehirler } from "./gezi-verileri";
-import type { Sehir } from "./gezi-verileri";
+import { sehirler, ulkeler } from "./gezi-verileri";
+import type { Sehir, Ulke } from "./gezi-verileri";
 import type { CityMapPoint, UserPin } from "./TravelMap";
 
 const TravelMap = dynamic(
@@ -48,14 +48,19 @@ function sonMekanlar(sehir: Sehir) {
 }
 
 export default function Home() {
+  const [selectedCountry, setSelectedCountry] = useState<Ulke>(ulkeler[0]);
   const [seciliSehirId, setSeciliSehirId] = useState<string | null>(null);
   const [userPins, setUserPins] = useState<UserPin[]>(ORNEK_KULLANICI_PINLERI);
   const [activeCategory, setActiveCategory] = useState<string>("all");
 
+  const ulkeSehirleri = useMemo(() => {
+    return sehirler.filter((s) => s.ulkeId === selectedCountry.id);
+  }, [selectedCountry.id]);
+
   const filtrelenmisSehirler = useMemo(() => {
-    if (activeCategory === "all") return sehirler;
-    return sehirler.filter((s) => s.etiketler.includes(activeCategory));
-  }, [activeCategory]);
+    if (activeCategory === "all") return ulkeSehirleri;
+    return ulkeSehirleri.filter((s) => s.etiketler.includes(activeCategory));
+  }, [ulkeSehirleri, activeCategory]);
 
   const seciliSehir = useMemo(
     () => sehirler.find((sehir) => sehir.id === seciliSehirId) ?? null,
@@ -66,13 +71,23 @@ export default function Home() {
     coordinates: sehir.koordinat,
     id: sehir.id,
     name: sehir.ad,
+    countryId: sehir.ulkeId,
+    countryName: sehir.ulke,
     placesCount: sehir.mekanlar.length,
     visits: sehir.ziyaretSayisi,
   }));
 
   const seciliHaritaSehri =
     haritaSehirleri.find((sehir) => sehir.id === seciliSehir?.id) ??
-    haritaSehirleri[0];
+    haritaSehirleri[0] ?? {
+      id: "istanbul",
+      name: "İstanbul",
+      countryId: "turkiye",
+      countryName: "Türkiye",
+      coordinates: [41.0082, 28.9784],
+      placesCount: 3,
+      visits: 128,
+    };
 
   const toplamYorum =
     seciliSehir?.mekanlar.reduce(
@@ -88,55 +103,71 @@ export default function Home() {
     setUserPins((prev) => [newPin, ...prev]);
   };
 
+  const handleSelectCountry = (country: Ulke) => {
+    setSelectedCountry(country);
+    setSeciliSehirId(null);
+  };
+
   return (
     <main className="home-shell">
       <Navbar mekanHref={`/mekanlar/${seciliSehir?.id ?? sehirler[0].id}`} />
 
-      <section className="map-hero" aria-label="Türkiye gezi haritası">
-        {/* Harita Üstü Kategori Filtre Çubuğu */}
+      <section className="map-hero" aria-label="Harita gezgin ekranı">
+        {/* Ülke Seçim Butonları & Kategori Filtre Çubuğu */}
         <div className="map-top-bar">
           <div className="category-filters">
+            {/* Ülke Seçicileri */}
+            <span className="filter-chip-label">Ülkeler:</span>
+            {ulkeler.map((u) => (
+              <button
+                className={`filter-chip ${selectedCountry.id === u.id ? "active" : ""}`}
+                key={u.id}
+                onClick={() => handleSelectCountry(u)}
+                type="button"
+              >
+                {u.bayrak} {u.ad}
+              </button>
+            ))}
+
+            <span className="filter-chip-divider">|</span>
+
+            {/* Kategori Filtreleri */}
             <button
               className={`filter-chip ${activeCategory === "all" ? "active" : ""}`}
               onClick={() => setActiveCategory("all")}
               type="button"
             >
-              🌟 Tüm Rotalar ({sehirler.length})
+              🌟 Tümü
             </button>
             <button
               className={`filter-chip ${activeCategory === "Tarih" ? "active" : ""}`}
               onClick={() => setActiveCategory("Tarih")}
               type="button"
             >
-              🏛️ Tarih & Kültür
-            </button>
-
-            <button
-              className={`filter-chip ${activeCategory === "Deniz" ? "active" : ""}`}
-              onClick={() => setActiveCategory("Deniz")}
-              type="button"
-            >
-              🏖️ Sahil & Deniz
+              🏛️ Tarih
             </button>
             <button
-              className={`filter-chip ${activeCategory === "Sokak" ? "active" : ""}`}
-              onClick={() => setActiveCategory("Sokak")}
+              className={`filter-chip ${activeCategory === "Sahil" ? "active" : ""}`}
+              onClick={() => setActiveCategory("Sahil")}
               type="button"
             >
-              📷 Şehir & Sokağın Ruhu
+              🏖️ Sahil
             </button>
           </div>
 
           <div className="map-hint-badge">
-            💡 Taktik: Haritada istediğin noktaya tıklayarak kendi pinini ekle!
+            💡 Ülkeye tıkla zoom yap, haritadan şehir seç!
           </div>
         </div>
 
         <TravelMap
           cities={haritaSehirleri}
+          countries={ulkeler}
           onAddNewUserPin={handleAddNewUserPin}
           onSelectCity={setSeciliSehirId}
+          onSelectCountry={handleSelectCountry}
           selectedCity={seciliHaritaSehri}
+          selectedCountry={selectedCountry}
           userPins={userPins}
         />
 
@@ -154,7 +185,7 @@ export default function Home() {
             >
               ✕
             </button>
-            <span className="small-label">Seçili Şehir</span>
+            <span className="small-label">{seciliSehir.ulke} • Seçili Şehir</span>
             <h1>{seciliSehir.ad}</h1>
             <p>{seciliSehir.ozet}</p>
 

@@ -209,6 +209,10 @@ a {
   width: 100%;
 }
 
+.real-map .leaflet-pane.leaflet-marker-pane {
+  z-index: 600;
+}
+
 .map-loading {
   display: flex;
   align-items: center;
@@ -1437,20 +1441,133 @@ a {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-/* Map Style Switcher (Bottom Right) */
-.map-style-switcher {
+.filter-chip-label {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--accent-emerald);
+  align-self: center;
+}
+
+.filter-chip-divider {
+  color: rgba(255, 255, 255, 0.2);
+  align-self: center;
+}
+
+/* Map Level Navigation Bar (Top Left) */
+.map-level-nav {
   position: absolute;
-  top: 24px;
+  bottom: 24px;
   right: 24px;
   z-index: 500;
   display: flex;
-  gap: 6px;
+  align-items: center;
+  gap: 10px;
+}
+
+.level-buttons {
+  display: flex;
+  gap: 4px;
   background: rgba(15, 23, 42, 0.85);
   backdrop-filter: blur(16px);
   padding: 4px;
   border-radius: var(--radius-full);
   border: 1px solid var(--border-glass);
   box-shadow: var(--shadow-main);
+}
+
+.level-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.level-btn:hover,
+.level-btn.active {
+  background: var(--gradient-brand);
+  color: #090d16;
+  font-weight: 800;
+}
+
+.zoom-out-btn {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: var(--accent-cyan);
+  border-radius: var(--radius-full);
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-main);
+  transition: all 0.2s ease;
+}
+
+.zoom-out-btn:hover {
+  background: rgba(56, 189, 248, 0.2);
+  transform: translateY(-2px);
+}
+
+/* Custom Country Markers */
+.custom-country-pin {
+  position: relative;
+  cursor: pointer;
+}
+
+.country-bubble {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(12px);
+  border: 1.5px solid var(--accent-emerald);
+  border-radius: var(--radius-full);
+  padding: 6px 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  white-space: nowrap;
+}
+
+.custom-country-pin:hover .country-bubble {
+  transform: scale(1.15);
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 25px var(--accent-cyan-glow);
+}
+
+.country-flag {
+  font-size: 18px;
+}
+
+.country-name {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.country-count {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-emerald);
+  background: rgba(16, 185, 129, 0.15);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+
+.country-pulse {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  right: -6px;
+  bottom: -6px;
+  border-radius: var(--radius-full);
+  background: rgba(16, 185, 129, 0.3);
+  animation: pulseGlow 2s infinite ease-in-out;
+  pointer-events: none;
 }
 
 .style-btn {
