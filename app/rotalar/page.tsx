@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Navbar } from "../Navbar";
 import { useAuth } from "../AuthProvider";
+import { useThemeAndLang } from "../ThemeAndLangProvider";
 import { sehirler } from "../gezi-verileri";
 
 type Rota = {
@@ -56,6 +57,7 @@ const HAZIR_ROTALAR: Rota[] = [
 
 export default function Rotalar() {
   const { user } = useAuth();
+  const { t } = useThemeAndLang();
   const [rotalar, setRotalar] = useState<Rota[]>(HAZIR_ROTALAR);
   const [selectedCityFilter, setSelectedCityFilter] = useState("all");
   const [showModal, setShowModal] = useState(false);
@@ -113,19 +115,15 @@ export default function Rotalar() {
 
       <section className="page-hero">
         <div>
-          <span className="small-label">Gezi Rotaları & İtinerary</span>
-          <h1>Özel gezi rotalarını keşfet veya kendi rotanı yaz.</h1>
-          <p>
-            Topluluk tarafından hazırlanan gün gün gezi rehberlerini incele,
-            duraklarını kaydet ve seyahatini kolayca planla.
-          </p>
+          <span className="small-label">{t.routesTitle}</span>
+          <h1>{t.routesSubtitle}</h1>
         </div>
         <button
           className="primary-link create-route-btn"
           onClick={() => setShowModal(true)}
           type="button"
         >
-          ✨ Yeni Rota Paylaş
+          {t.newRouteBtn}
         </button>
       </section>
 
@@ -163,7 +161,7 @@ export default function Rotalar() {
             <p className="route-summary">{rota.ozet}</p>
 
             <div className="route-stops">
-              <span className="small-label">Rota Durakları:</span>
+              <span className="small-label">{t.stops}:</span>
               <ol className="stops-list">
                 {rota.duraklar.map((durak, idx) => (
                   <li key={idx}>
@@ -179,10 +177,10 @@ export default function Rotalar() {
                 onClick={() => handleLike(rota.id)}
                 type="button"
               >
-                ❤️ {rota.likes} Beğeni
+                ❤️ {rota.likes} {t.likes}
               </button>
               <Link className="outline-link compact-link" href={`/mekanlar/${rota.sehirAd.toLowerCase()}`}>
-                Haritada Gör →
+                {t.seeOnMap}
               </Link>
             </div>
           </article>
@@ -201,13 +199,13 @@ export default function Rotalar() {
               ✕
             </button>
 
-            <h3>✨ Yeni Gezi Rotası Oluştur</h3>
+            <h3>{t.createRouteTitle}</h3>
 
             <label>
-              <span>Rota Başlığı</span>
+              <span>{t.routeTitleLabel}</span>
               <input
                 onChange={(e) => setYeniBaslik(e.target.value)}
-                placeholder="Örn: 2 Günlük Kapadokya Vadi & Balon Turu"
+                placeholder={t.routeTitlePlaceholder}
                 required
                 type="text"
                 value={yeniBaslik}
@@ -216,7 +214,7 @@ export default function Rotalar() {
 
             <div className="form-row-2">
               <label>
-                <span>Şehir</span>
+                <span>{t.cityLabel}</span>
                 <select onChange={(e) => setYeniSehir(e.target.value)} value={yeniSehir}>
                   {sehirler.map((s) => (
                     <option key={s.id} value={s.ad}>
@@ -227,7 +225,7 @@ export default function Rotalar() {
               </label>
 
               <label>
-                <span>Süre</span>
+                <span>{t.durationLabel}</span>
                 <select onChange={(e) => setYeniSure(e.target.value)} value={yeniSure}>
                   <option value="1 Gün">1 Gün</option>
                   <option value="2 Gün">2 Gün</option>
@@ -248,20 +246,20 @@ export default function Rotalar() {
             </label>
 
             <label>
-              <span>Duraklar (Virgülle ayırarak yazın)</span>
+              <span>{t.stopsLabel}</span>
               <input
                 onChange={(e) => setYeniDuraklar(e.target.value)}
-                placeholder="Örn: Paşabağ Vadisi, Göreme Seyir Tepesi, Avanos Çömlek"
+                placeholder={t.stopsPlaceholder}
                 type="text"
                 value={yeniDuraklar}
               />
             </label>
 
             <label>
-              <span>Rota Özeti & Taktikler</span>
+              <span>{t.descriptionLabel}</span>
               <textarea
                 onChange={(e) => setYeniOzet(e.target.value)}
-                placeholder="Rotayı uygulayacak gezginler için ipuçların..."
+                placeholder={t.descriptionPlaceholder}
                 rows={3}
                 value={yeniOzet}
               />
@@ -273,10 +271,10 @@ export default function Rotalar() {
                 onClick={() => setShowModal(false)}
                 type="button"
               >
-                İptal
+                {t.cancel}
               </button>
               <button className="save-btn" type="submit">
-                Rotayı Kaydet ✨
+                {t.publishRoute}
               </button>
             </div>
           </form>

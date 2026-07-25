@@ -13,6 +13,7 @@ import {
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import type { Ulke } from "./gezi-verileri";
+import { useThemeAndLang } from "./ThemeAndLangProvider";
 
 export type CityMapPoint = {
   id: string;
@@ -36,8 +37,13 @@ export type UserPin = {
 
 const MAP_STYLES = {
   voyager: {
-    name: "🗺️ Net & Canlı Harita",
+    name: "🗺️ Canlı Harita",
     url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+    attribution: '&copy; OpenStreetMap &copy; CARTO',
+  },
+  dark: {
+    name: "🌙 Gece Modu",
+    url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
     attribution: '&copy; OpenStreetMap &copy; CARTO',
   },
   topo: {
@@ -49,11 +55,6 @@ const MAP_STYLES = {
     name: "🛰️ Canlı Uydu",
     url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
     attribution: '&copy; Esri',
-  },
-  dark: {
-    name: "🌙 Gece Modu",
-    url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-    attribution: '&copy; OpenStreetMap &copy; CARTO',
   },
 };
 
@@ -166,8 +167,15 @@ export function TravelMap({
   userPins?: UserPin[];
   onAddNewUserPin?: (pin: Omit<UserPin, "id">) => void;
 }) {
+  const { theme, t } = useThemeAndLang();
   const [viewLevel, setViewLevel] = useState<"countries" | "cities">("cities");
-  const [currentStyle, setCurrentStyle] = useState<keyof typeof MAP_STYLES>("voyager");
+  const [currentStyle, setCurrentStyle] = useState<keyof typeof MAP_STYLES>(
+    theme === "dark" ? "dark" : "voyager",
+  );
+
+  useEffect(() => {
+    setCurrentStyle(theme === "dark" ? "dark" : "voyager");
+  }, [theme]);
 
   // Map Target & Zoom state for animated smooth flyTo
   const [mapTarget, setMapTarget] = useState<[number, number]>(selectedCity.coordinates);
@@ -227,14 +235,14 @@ export function TravelMap({
             onClick={handleZoomToWorld}
             type="button"
           >
-            🌐 Ülkeler Modu
+            {t.countriesMode}
           </button>
           <button
             className={`level-btn ${viewLevel === "cities" ? "active" : ""}`}
             onClick={() => setViewLevel("cities")}
             type="button"
           >
-            🏙️ Şehirler Modu ({selectedCountry.bayrak} {selectedCountry.ad})
+            {t.citiesMode} ({selectedCountry.bayrak} {selectedCountry.ad})
           </button>
         </div>
 
@@ -244,7 +252,7 @@ export function TravelMap({
             onClick={handleZoomToWorld}
             type="button"
           >
-            ⬅️ Tüm Ülkelere Zoom Out
+            {t.zoomOutWorld}
           </button>
         )}
       </div>
@@ -258,6 +266,7 @@ export function TravelMap({
       >
         <TileLayer
           attribution={MAP_STYLES[currentStyle].attribution}
+          key={currentStyle}
           url={MAP_STYLES[currentStyle].url}
         />
         <ZoomControl position="bottomright" />
@@ -283,15 +292,15 @@ export function TravelMap({
               <Popup className="dark-map-popup">
                 <div className="popup-card">
                   <h3>{country.bayrak} {country.ad}</h3>
-                  <p>📍 {country.sehirSayisi} Şehir Rotaları</p>
-                  <p>👥 {country.ziyaretSayisi} Gezgin İncelemesi</p>
+                  <p>📍 {country.sehirSayisi} {t.places}</p>
+                  <p>👥 {country.ziyaretSayisi} {t.reviews}</p>
                   <button
                     className="primary-link compact-link"
                     onClick={() => handleCountryClick(country)}
                     style={{ marginTop: 8, width: "100%" }}
                     type="button"
                   >
-                    Şehirlere Zoom Yap →
+                    {t.openGuide}
                   </button>
                 </div>
               </Popup>
@@ -314,8 +323,8 @@ export function TravelMap({
                 <Popup className="dark-map-popup">
                   <div className="popup-card">
                     <h3>📍 {city.name} ({city.countryName})</h3>
-                    <p>🏛️ {city.placesCount} Popüler Mekan</p>
-                    <p>👥 {city.visits} Gezgin Topluluk Notu</p>
+                    <p>🏛️ {city.placesCount} {t.popularPlaces}</p>
+                    <p>👥 {city.visits} {t.visitors}</p>
                   </div>
                 </Popup>
               </Marker>
@@ -333,14 +342,13 @@ export function TravelMap({
               <div className="popup-card">
                 <h3>
                   {pin.category === "visited"
-                    ? "✅ Gittim"
+                    ? t.visited
                     : pin.category === "wishlist"
-                    ? "📌 Rota Listemde"
-                    : "❤️ Favorim"}
+                    ? t.wishlist
+                    : t.favorite}
                   : {pin.title}
                 </h3>
                 {pin.note && <p>💬 "{pin.note}"</p>}
-                <p><small>Kişisel Pinim</small></p>
               </div>
             </Popup>
           </Marker>
@@ -380,17 +388,17 @@ export function TravelMap({
             >
               ✕
             </button>
-            <h3>📍 Yeni Yer İşaretle</h3>
+            <h3>{t.newPinTitle}</h3>
             <p className="coords-info">
-              Koordinat: {newPinCoords.lat.toFixed(4)}, {newPinCoords.lng.toFixed(4)}
+              {newPinCoords.lat.toFixed(4)}, {newPinCoords.lng.toFixed(4)}
             </p>
 
             <label>
-              <span>Yer / Mekan Adı</span>
+              <span>{t.placeName}</span>
               <input
                 autoFocus
                 onChange={(e) => setNewPinTitle(e.target.value)}
-                placeholder="Örn: Roma Kolezyum veya Kapadokya Seyir Tepesi"
+                placeholder={t.placeNamePlaceholder}
                 required
                 type="text"
                 value={newPinTitle}
@@ -398,37 +406,37 @@ export function TravelMap({
             </label>
 
             <label>
-              <span>Durum / Kategori</span>
+              <span>{t.categoryStatus}</span>
               <div className="category-options">
                 <button
                   className={newPinCategory === "visited" ? "selected visited" : ""}
                   onClick={() => setNewPinCategory("visited")}
                   type="button"
                 >
-                  ✅ Gittim
+                  {t.visited}
                 </button>
                 <button
                   className={newPinCategory === "wishlist" ? "selected wishlist" : ""}
                   onClick={() => setNewPinCategory("wishlist")}
                   type="button"
                 >
-                  📌 Rota Listemde
+                  {t.wishlist}
                 </button>
                 <button
                   className={newPinCategory === "favorite" ? "selected favorite" : ""}
                   onClick={() => setNewPinCategory("favorite")}
                   type="button"
                 >
-                  ❤️ Favorim
+                  {t.favorite}
                 </button>
               </div>
             </label>
 
             <label>
-              <span>Not / Anı (İsteğe Bağlı)</span>
+              <span>Not / Anı</span>
               <textarea
                 onChange={(e) => setNewPinNote(e.target.value)}
-                placeholder="Buradaki en harika manzarayı ve tavsiyelerini yaz..."
+                placeholder={t.notePlaceholder}
                 rows={2}
                 value={newPinNote}
               />
@@ -440,10 +448,10 @@ export function TravelMap({
                 onClick={() => setNewPinCoords(null)}
                 type="button"
               >
-                İptal
+                {t.cancel}
               </button>
               <button className="save-btn" type="submit">
-                Pin Kaydet ✨
+                {t.savePin}
               </button>
             </div>
           </form>
