@@ -2,8 +2,9 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Navbar } from "./Navbar";
+import { useAuth } from "./AuthProvider";
 import { useThemeAndLang } from "./ThemeAndLangProvider";
 import { sehirler, ulkeler } from "./gezi-verileri";
 import type { Sehir, Ulke } from "./gezi-verileri";
@@ -17,43 +18,32 @@ const TravelMap = dynamic(
   },
 );
 
-const ORNEK_KULLANICI_PINLERI: UserPin[] = [
-  {
-    id: "pin-1",
-    lat: 37.9137,
-    lng: 29.1187,
-    title: "Pamukkale Travertenleri",
-    category: "visited",
-    note: "Göz alıcı traverten terasları ve antik havuz harikaydı!",
-  },
-  {
-    id: "pin-2",
-    lat: 36.2004,
-    lng: 29.6378,
-    title: "Kaş Kekova Batık Şehir",
-    category: "favorite",
-    note: "Kano turu ile batık kalıntıları izlemek paha biçilemez.",
-  },
-  {
-    id: "pin-3",
-    lat: 37.5528,
-    lng: 29.6789,
-    title: "Salda Gölü (Türkiye'nin Maldivleri)",
-    category: "wishlist",
-    note: "Bir sonraki doğa kampı rotam burası olacak.",
-  },
-];
-
 function sonMekanlar(sehir: Sehir) {
   return sehir.mekanlar.slice(0, 3);
 }
 
 export default function Home() {
+  const { user } = useAuth();
   const { t } = useThemeAndLang();
   const [selectedCountry, setSelectedCountry] = useState<Ulke>(ulkeler[0]);
   const [seciliSehirId, setSeciliSehirId] = useState<string | null>(null);
-  const [userPins, setUserPins] = useState<UserPin[]>(ORNEK_KULLANICI_PINLERI);
+  const [userPins, setUserPins] = useState<UserPin[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>("all");
+
+  // Kullanıcının kendi kaydettiği pinleri hesaba özel yükle
+  useEffect(() => {
+    const storageKey = `whib_user_pins_${user?.uid || "guest"}`;
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      try {
+        setUserPins(JSON.parse(saved));
+      } catch {
+        setUserPins([]);
+      }
+    } else {
+      setUserPins([]);
+    }
+  }, [user?.uid]);
 
   const ulkeSehirleri = useMemo(() => {
     return sehirler.filter((s) => s.ulkeId === selectedCountry.id);
@@ -102,7 +92,10 @@ export default function Home() {
       ...pinData,
       id: `pin-${Date.now()}`,
     };
-    setUserPins((prev) => [newPin, ...prev]);
+    const updated = [newPin, ...userPins];
+    setUserPins(updated);
+    const storageKey = `whib_user_pins_${user?.uid || "guest"}`;
+    localStorage.setItem(storageKey, JSON.stringify(updated));
   };
 
   const handleSelectCountry = (country: Ulke) => {

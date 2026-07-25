@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { Navbar } from "../Navbar";
 import { useAuth } from "../AuthProvider";
+import { useThemeAndLang } from "../ThemeAndLangProvider";
+import type { UserPin } from "../TravelMap";
 
 type Badge = {
   id: string;
@@ -12,55 +15,75 @@ type Badge = {
   unlocked: boolean;
 };
 
-const ROZETLER: Badge[] = [
-  {
-    id: "rozet-1",
-    icon: "🧭",
-    title: "İlk Adım Gezgini",
-    desc: "İlk rotanı ve gezdiğin mekanı işaretledin.",
-    unlocked: true,
-  },
-  {
-    id: "rozet-2",
-    icon: "🏛️",
-    title: "Tarih Keşifçisi",
-    desc: "5 veya daha fazla tarihi mekanı ziyaret ettin.",
-    unlocked: true,
-  },
-  {
-    id: "rozet-3",
-    icon: "🏕️",
-    title: "Doğa & Kamp Tutkunu",
-    desc: "Doğa parkı ve koy rotalarını rehberine ekledin.",
-    unlocked: true,
-  },
-  {
-    id: "rozet-4",
-    icon: "📸",
-    title: "Sokak Fotoğrafçısı",
-    desc: "Şehir içi kültür ve mahalle rotalarını tamamladın.",
-    unlocked: false,
-  },
-  {
-    id: "rozet-5",
-    icon: "⭐",
-    title: "Gurme Keşifçi",
-    desc: "Lezzet duraklarına 10 değerlendirme yazdın.",
-    unlocked: false,
-  },
-];
-
 export default function Profil() {
   const { cikisYap, loading, user } = useAuth();
+  const { t } = useThemeAndLang();
+  const [userPins, setUserPins] = useState<UserPin[]>([]);
+
+  useEffect(() => {
+    if (!user) {
+      setUserPins([]);
+      return;
+    }
+    const storageKey = `whib_user_pins_${user.uid}`;
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      try {
+        setUserPins(JSON.parse(saved));
+      } catch {
+        setUserPins([]);
+      }
+    } else {
+      setUserPins([]);
+    }
+  }, [user]);
+
+  const totalPins = userPins.length;
+  const visitedPins = userPins.filter((p) => p.category === "visited");
+  const wishlistPins = userPins.filter((p) => p.category === "wishlist");
+  const favoritePins = userPins.filter((p) => p.category === "favorite");
+
+  // Dynamic Badges
+  const badges: Badge[] = [
+    {
+      id: "rozet-1",
+      icon: "🧭",
+      title: "İlk Adım Gezgini",
+      desc: "İlk rotanı ve gezdiğin mekanı işaretledin.",
+      unlocked: totalPins > 0,
+    },
+    {
+      id: "rozet-2",
+      icon: "🏛️",
+      title: "Tarih Keşifçisi",
+      desc: "3 veya daha fazla mekanı ziyaret ettin.",
+      unlocked: visitedPins.length >= 3,
+    },
+    {
+      id: "rozet-3",
+      icon: "🏕️",
+      title: "Doğa & Rota Tutkunu",
+      desc: "Rota listene en az 2 mekan ekledin.",
+      unlocked: wishlistPins.length >= 2,
+    },
+    {
+      id: "rozet-4",
+      icon: "❤️",
+      title: "Favori Gezgin",
+      desc: "Favorilerine en az 1 mekan ekledin.",
+      unlocked: favoritePins.length >= 1,
+    },
+  ];
 
   const userInitial = (user?.displayName || user?.email || "G").charAt(0).toUpperCase();
+  const travelPercentage = ((visitedPins.length / 81) * 100).toFixed(1);
 
   return (
     <main className="page-shell">
       <Navbar />
       <section className="profile-layout">
         <div className="profile-card">
-          <span className="small-label">Gezgin Profili</span>
+          <span className="small-label">{t.travelerProfile}</span>
           {loading ? (
             <h1>Profil yükleniyor...</h1>
           ) : user ? (
@@ -77,24 +100,24 @@ export default function Profil() {
 
               <div className="profile-stats">
                 <div>
-                  <strong>5</strong>
-                  <span>Gezilen Şehir</span>
+                  <strong>{visitedPins.length}</strong>
+                  <span>{t.visitedCitiesStat}</span>
                 </div>
                 <div>
-                  <strong>12</strong>
-                  <span>İşaretli Pin</span>
+                  <strong>{totalPins}</strong>
+                  <span>{t.markedPinsStat}</span>
                 </div>
                 <div>
-                  <strong>%6.1</strong>
-                  <span>Türkiye Gezi Oranı</span>
+                  <strong>%{travelPercentage}</strong>
+                  <span>{t.travelRatio}</span>
                 </div>
               </div>
 
               {/* Gezgin Rozetleri */}
               <div className="badges-section">
-                <span className="small-label">Kazanılan Gezgin Rozetleri</span>
+                <span className="small-label">{t.badgesTitle}</span>
                 <div className="badges-grid">
-                  {ROZETLER.map((rozet) => (
+                  {badges.map((rozet) => (
                     <div
                       className={`badge-item ${rozet.unlocked ? "unlocked" : "locked"}`}
                       key={rozet.id}
@@ -111,7 +134,7 @@ export default function Profil() {
               </div>
 
               <button className="secondary-action logout-btn" onClick={cikisYap} type="button">
-                🚪 Çıkış Yap
+                🚪 {t.logout}
               </button>
             </>
           ) : (
@@ -123,10 +146,10 @@ export default function Profil() {
               </p>
               <div className="auth-actions">
                 <Link className="primary-link" href="/giris">
-                  Giriş yap
+                  {t.login}
                 </Link>
                 <Link className="outline-link" href="/kayit">
-                  Kayıt ol
+                  {t.register}
                 </Link>
               </div>
             </>
@@ -134,21 +157,29 @@ export default function Profil() {
         </div>
 
         <aside className="profile-card muted-profile">
-          <span className="small-label">Kişisel Harita & Rotalarım</span>
+          <span className="small-label">{t.savedRoutesTitle}</span>
           <h2>Gezilen Rotalar & Favoriler</h2>
+          
           <div className="saved-routes-list">
-            <div className="saved-route-card">
-              <span>📍 Kapadokya & Nevşehir</span>
-              <small>3 Ziyaret Noktası • Favori</small>
-            </div>
-            <div className="saved-route-card">
-              <span>📍 Kaş & Kekova Koyu</span>
-              <small>4 Deniz Rotası • Gidildi</small>
-            </div>
-            <div className="saved-route-card">
-              <span>📍 Eskişehir Odunpazarı</span>
-              <small>2 Müze Durak • Gidildi</small>
-            </div>
+            {userPins.length === 0 ? (
+              <div style={{ padding: "20px 0", color: "var(--text-muted)", fontSize: 14 }}>
+                📍 Henüz bir yer işaretlemediniz. Haritadaki noktalara tıklayarak ilk mekanınızı veya rotanızı işaretleyin!
+              </div>
+            ) : (
+              userPins.map((pin) => (
+                <div className="saved-route-card" key={pin.id}>
+                  <span>📍 {pin.title}</span>
+                  <small>
+                    {pin.category === "visited"
+                      ? "✅ Gidildi"
+                      : pin.category === "wishlist"
+                      ? "📌 Rota Listemde"
+                      : "❤️ Favorim"}
+                    {pin.note ? ` • "${pin.note}"` : ""}
+                  </small>
+                </div>
+              ))
+            )}
           </div>
         </aside>
       </section>
