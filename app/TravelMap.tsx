@@ -173,13 +173,9 @@ export function TravelMap({
   const { theme, t } = useThemeAndLang();
   const [currentStyle, setCurrentStyle] =
     useState<keyof typeof MAP_STYLES>("voyager");
-  const [activeCountryId, setActiveCountryId] = useState<string | null>(
-    selectedCountry.id,
-  );
-  const [mapTarget, setMapTarget] = useState<[number, number]>(
-    selectedCountry.koordinat,
-  );
-  const [mapZoom, setMapZoom] = useState<number>(selectedCountry.zoom || 5);
+  const [activeCountryId, setActiveCountryId] = useState<string | null>(null);
+  const [mapTarget, setMapTarget] = useState<[number, number]>([38.0, 20.0]);
+  const [mapZoom, setMapZoom] = useState<number>(4);
 
   const activeTileUrl =
     theme === "light"
@@ -379,35 +375,36 @@ export function TravelMap({
           </Marker>
         ))}
 
-        {/* ŞEHİR PINLERİ */}
-        {cities
-          .filter(
-            (city) =>
-              !activeCountryId ||
-              city.countryId === activeCountryId ||
-              city.countryName === selectedCountry.ad,
-          )
-          .map((city) => {
-          const isSelected = city.id === selectedCity?.id;
-          return (
-            <Marker
-              eventHandlers={{
-                click: () => handleCityClick(city),
-              }}
-              icon={createCityIcon(isSelected, city.name, city.placesCount, city.countryId || selectedCountry.id)}
-              key={city.id}
-              position={city.coordinates}
-            >
-              <Popup className="dark-map-popup">
-                <div className="popup-card">
-                  <h3>📍 {city.name} ({city.countryName})</h3>
-                  <p>🏛️ {city.placesCount} {t.popularPlaces}</p>
-                  <p>👥 {city.visits} {t.visitors}</p>
-                </div>
-              </Popup>
-            </Marker>
-          );
-        })}
+        {/* ŞEHİR PINLERİ - Sadece bir ülkeye Yakınlaş denildiğinde görünür */}
+        {activeCountryId &&
+          cities
+            .filter((city) => city.countryId === activeCountryId)
+            .map((city) => {
+              const isSelected = city.id === selectedCity?.id;
+              return (
+                <Marker
+                  eventHandlers={{
+                    click: () => handleCityClick(city),
+                  }}
+                  icon={createCityIcon(
+                    isSelected,
+                    city.name,
+                    city.placesCount,
+                    city.countryId,
+                  )}
+                  key={city.id}
+                  position={city.coordinates}
+                >
+                  <Popup className="dark-map-popup">
+                    <div className="popup-card">
+                      <h3>📍 {city.name} ({city.countryName})</h3>
+                      <p>🏛️ {city.placesCount} {t.popularPlaces}</p>
+                      <p>👥 {city.visits} {t.visitors}</p>
+                    </div>
+                  </Popup>
+                </Marker>
+              );
+            })}
 
         {/* Kullanıcı Pinleri */}
         {userPins.map((pin) => (
