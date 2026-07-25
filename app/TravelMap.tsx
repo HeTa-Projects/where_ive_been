@@ -260,9 +260,16 @@ export function TravelMap({
       <MapContainer
         center={mapTarget}
         className="real-map"
+        maxBounds={[
+          [-85, -180],
+          [85, 180],
+        ]}
+        maxBoundsViscosity={1.0}
+        maxZoom={18}
+        minZoom={3}
         scrollWheelZoom={true}
-        zoomControl={false}
         zoom={mapZoom}
+        zoomControl={false}
       >
         <TileLayer
           attribution={MAP_STYLES[currentStyle].attribution}
