@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { updateProfile } from "firebase/auth";
-import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import { doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
 import { Navbar } from "../Navbar";
 import { useAuth } from "../AuthProvider";
 import { auth, db } from "../firebase";
@@ -28,6 +29,7 @@ const PRESET_AVATARS = [
 
 export default function Profil() {
   const { cikisYap, loading, user } = useAuth();
+  const router = useRouter();
   const { t } = useThemeAndLang();
   const [userPins, setUserPins] = useState<UserPin[]>([]);
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
@@ -81,6 +83,12 @@ export default function Profil() {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace("/giris");
+    }
+  }, [loading, router, user]);
+
   const handleSavePhoto = async (photoUrl: string) => {
     setProfilePhoto(photoUrl);
     if (user) {
@@ -94,7 +102,17 @@ export default function Profil() {
       }
       if (db) {
         try {
-          await setDoc(doc(db, "users", user.uid), { photoUrl }, { merge: true });
+          await setDoc(
+            doc(db, "users", user.uid),
+            {
+              userId: user.uid,
+              email: user.email,
+              displayName: user.displayName,
+              photoUrl,
+              updatedAt: serverTimestamp(),
+            },
+            { merge: true },
+          );
         } catch (err) {
           console.error("Firestore photo save error:", err);
         }
@@ -123,12 +141,25 @@ export default function Profil() {
       localStorage.setItem(`whib_user_pins_${user.uid}`, JSON.stringify(updated));
       if (db) {
         try {
-          await setDoc(doc(db, "users", user.uid), { pins: updated }, { merge: true });
+          await setDoc(
+            doc(db, "users", user.uid),
+            {
+              userId: user.uid,
+              pins: updated,
+              updatedAt: serverTimestamp(),
+            },
+            { merge: true },
+          );
         } catch (err) {
           console.error("Firestore pin delete error:", err);
         }
       }
     }
+  };
+
+  const handleLogout = async () => {
+    await cikisYap();
+    router.replace("/giris");
   };
 
   const totalPins = userPins.length;
@@ -240,7 +271,7 @@ export default function Profil() {
                 </div>
               </div>
 
-              <button className="secondary-action logout-btn" onClick={cikisYap} type="button">
+              <button className="secondary-action logout-btn" onClick={handleLogout} type="button">
                 🚪 {t.logout}
               </button>
             </>

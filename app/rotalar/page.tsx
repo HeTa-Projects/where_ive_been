@@ -81,6 +81,7 @@ export default function Rotalar() {
   const [yeniKategori, setYeniKategori] = useState("🏛️ Tarih & Kültür");
   const [yeniDuraklar, setYeniDuraklar] = useState("");
   const [yeniOzet, setYeniOzet] = useState("");
+  const [formHata, setFormHata] = useState("");
 
   // Firestore Sync for Routes
   useEffect(() => {
@@ -133,7 +134,12 @@ export default function Rotalar() {
 
   const handleCreateRota = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormHata("");
     if (!yeniBaslik.trim()) return;
+    if (!user) {
+      setFormHata("Rota oluşturmak için giriş yapmalısın.");
+      return;
+    }
 
     const durakListesi = yeniDuraklar
       .split(",")
@@ -156,11 +162,12 @@ export default function Rotalar() {
     };
 
     setRotalar((prev) => [yeniRotaState, ...prev]);
-    setShowModal(false);
 
     if (db) {
       try {
         await addDoc(collection(db, "routes"), {
+          userId: user.uid,
+          userEmail: user.email,
           baslik: yeniBaslik.trim(),
           sehirAd: yeniSehir,
           sure: yeniSure,
@@ -173,9 +180,13 @@ export default function Rotalar() {
         });
       } catch (err) {
         console.error("Firestore route creation error:", err);
+        setFormHata("Rota Firestore'a kaydedilemedi. Rules ve giriş durumunu kontrol et.");
+        setRotalar((prev) => prev.filter((rota) => rota.id !== yeniRotaState.id));
+        return;
       }
     }
 
+    setShowModal(false);
     setYeniBaslik("");
     setYeniDuraklar("");
     setYeniOzet("");
@@ -366,6 +377,7 @@ export default function Rotalar() {
                 {t.publishRoute}
               </button>
             </div>
+            {formHata && <div className="form-alert">{formHata}</div>}
           </form>
         </div>
       )}

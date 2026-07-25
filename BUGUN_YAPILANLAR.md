@@ -531,3 +531,53 @@ const handleCreateRota = async (e: React.FormEvent) => {
 ---
 
 Bu rehber projenizde `BUGUN_YAPILANLAR.md` dosyası olarak saklanmaktadır ve GitHub'a yüklenmiştir! İstediğiniz zaman dosyayı açıp kod parçalarını detaylıca inceleyebilirsiniz. 🚀
+
+---
+
+## 2026-07-26 Sonrasi Yapilan Ek Duzenlemeler
+
+Bu bolum, GitHub'dan arkadasin ekledigi gelistirmeler cekildikten sonra bu oturumda yapilan ek duzenlemeleri ozetler. Ustteki mevcut notlara dokunulmadan en alta eklenmistir.
+
+### 1. Firebase Auth ve Giris/Kayit Akisi
+
+- Kayit islemi sonrasinda kullanicinin otomatik profilde kalmasi yerine cikis yapip giris sayfasina yonlendirilmesi saglandi.
+- Giris sayfasina kayit basarili mesaji eklendi.
+- Kullanici zaten girisliyse `/giris` sayfasinda kalmamasi, otomatik olarak `/profil` sayfasina yonlenmesi saglandi.
+- Firebase Auth basarili olduktan sonra `users/{uid}` profil dokumani yazimi hata verse bile giris islemini bozmamasi icin Firestore profil senkronizasyonu ayri hata yakalama icine alindi.
+- Demo oturumun Firebase aktifken gercek giris gibi davranmasi engellendi.
+
+### 2. Firestore Koleksiyonlari ve Rules Uyumu
+
+- Uygulamanin gercekte kullandigi koleksiyonlara gore yeni `firestore.rules` dosyasi olusturuldu ve guncellendi.
+- Rules icine `users`, `discussions`, `discussion_replies`, `place_reviews`, `routes`, `contactMessages` ve `public_pins` koleksiyonlari eklendi.
+- Eski koleksiyon adlariyla uyumluluk icin `reviews`, `communityPosts`, `communityComments` kurallari da korundu.
+- Pin, topluluk yaniti, mekan yorumu, rota ve iletisim mesajlarinin Firestore tarafinda reddedilmesine neden olan koleksiyon/rules uyumsuzlugu duzeltildi.
+
+### 3. Topluluk Sayfasi
+
+- Topluluk sohbetleri icin gercek yanit sistemi eklendi.
+- Yanitlar `discussion_replies` koleksiyonuna kaydedilecek sekilde baglandi.
+- Sohbet yanit sayisi sahte/demo sayilar yerine gercek yanit listesinden okunacak hale getirildi.
+- Yeni sohbet baslatildiktan sonra form alanlarinin temizlenmesi saglandi.
+- Yanit eklerken cevap sayisi guncellemesi hata verse bile yanit kaydinin bozulmamasi icin sayac guncellemesi ayri hata yakalama icine alindi.
+- Hata mesajlari daha okunur hale getirildi.
+
+### 4. Profil ve Cikis Akisi
+
+- Profil sayfasinda cikis yapildiginda kullanicinin ayni sayfada "giris yapmalisin" gorunumunde kalmasi yerine direkt `/giris` sayfasina yonlenmesi saglandi.
+- Kullanici girisli degilken profil sayfasina giderse yine giris sayfasina yonlendirme eklendi.
+
+### 5. Iletisim Sayfasi
+
+- Iletisim formu sadece arayuz prototipi olmaktan cikarildi.
+- Giris yapan kullanicilarin onerilerini veya sikayetlerini `contactMessages` koleksiyonuna kaydetmesi saglandi.
+
+### 6. Test ve Kontrol
+
+- Yapilan duzenlemelerden sonra `npm.cmd test` calistirildi.
+- Build ve render testleri basarili gecti.
+- Son kontrolde 5 testin 5'i basariliydi.
+
+### Not
+
+Firebase Console'daki Firestore Rules kismi mutlaka guncel `firestore.rules` dosyasindaki icerikle degistirilmelidir. Aksi halde ozellikle `public_pins` ve `discussion_replies` koleksiyonlarina yazma islemleri Firestore tarafindan reddedilir.

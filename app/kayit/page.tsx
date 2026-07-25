@@ -1,13 +1,14 @@
 "use client";
 
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { createUserWithEmailAndPassword, signOut, updateProfile } from "firebase/auth";
+import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Navbar } from "../Navbar";
 import { useAuth } from "../AuthProvider";
 import { useThemeAndLang } from "../ThemeAndLangProvider";
-import { auth } from "../firebase";
+import { auth, db, firebaseHazir } from "../firebase";
 
 export default function Kayit() {
   const router = useRouter();
@@ -24,16 +25,38 @@ export default function Kayit() {
     setHata("");
     setLoading(true);
 
-    if (auth) {
+    if (auth && firebaseHazir) {
       try {
         const credential = await createUserWithEmailAndPassword(auth, email, sifre);
-        if (ad.trim()) {
-          await updateProfile(credential.user, { displayName: ad.trim() });
+        const displayName = ad.trim() || email.split("@")[0] || "Gezgin Kullanıcı";
+        await updateProfile(credential.user, { displayName });
+        if (db) {
+          try {
+            await setDoc(
+            doc(db, "users", credential.user.uid),
+            {
+              userId: credential.user.uid,
+              email: credential.user.email || email,
+              displayName,
+              photoUrl: credential.user.photoURL || null,
+              pins: [],
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+            },
+            { merge: true },
+            );
+          } catch (profileError) {
+            console.warn("Firestore user profile creation error:", profileError);
+          }
         }
-        router.push("/profil");
+        await signOut(auth);
+        router.push(`/giris?kayit=basarili&email=${encodeURIComponent(email)}`);
         return;
-      } catch {
-        // Firebase Auth hatası durumunda demo kayıt ile devam et
+      } catch (error) {
+        console.error("Firebase register error:", error);
+        setHata("Kayıt oluşturulamadı. E-posta kullanılıyor olabilir veya şifre en az 6 karakter olmalı.");
+        setLoading(false);
+        return;
       }
     }
 

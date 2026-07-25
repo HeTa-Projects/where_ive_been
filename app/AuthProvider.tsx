@@ -44,17 +44,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             photoURL: fbUser.photoURL || undefined,
           });
         } else {
-          // Check local demo session
-          const savedDemo = localStorage.getItem("whib_demo_user");
-          if (savedDemo) {
-            try {
-              setUser(JSON.parse(savedDemo));
-            } catch {
-              setUser(null);
-            }
-          } else {
-            setUser(null);
-          }
+          localStorage.removeItem("whib_demo_user");
+          setUser(null);
         }
         setLoading(false);
       });

@@ -34,6 +34,8 @@ export type UserPin = {
   title: string;
   category: "visited" | "wishlist" | "favorite";
   note?: string;
+  userId?: string;
+  userName?: string;
 };
 
 const MAP_STYLES = {
@@ -214,6 +216,7 @@ export function TravelMap({
   onAddNewUserPin,
   onDeleteUserPin,
   onAuthRequired,
+  currentUserId,
 }: {
   countries: Ulke[];
   cities: CityMapPoint[];
@@ -226,6 +229,7 @@ export function TravelMap({
   onAddNewUserPin?: (pin: Omit<UserPin, "id">) => void;
   onDeleteUserPin?: (pinId: string) => void;
   onAuthRequired?: () => void;
+  currentUserId?: string;
 }) {
   const { theme, t } = useThemeAndLang();
   const [currentStyle, setCurrentStyle] =
@@ -586,7 +590,7 @@ export function TravelMap({
                   : {pin.title}
                 </h3>
                 {pin.note && <p>💬 "{pin.note}"</p>}
-                {onDeleteUserPin && (
+                {onDeleteUserPin && (!pin.userId || pin.userId === currentUserId) && (
                   <button
                     className="delete-pin-card-btn"
                     onClick={() => onDeleteUserPin(pin.id)}

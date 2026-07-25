@@ -30,6 +30,14 @@ type DiscussionPost = {
   category: string;
 };
 
+type DiscussionReply = {
+  id: string;
+  postId: string;
+  yazar: string;
+  metin: string;
+  zaman: string;
+};
+
 const BASLANGIC_KONUSMALARI: DiscussionPost[] = [
   {
     id: "eskisehir-odunpazari",
@@ -37,9 +45,8 @@ const BASLANGIC_KONUSMALARI: DiscussionPost[] = [
     mekan: "Odunpazarı Evleri",
     yazar: "Selin G.",
     zaman: "Bugün",
-    metin:
-      "Odunpazarı ve OMM aynı güne rahat sığıyor mu? Kahve molası için sakin bir yer arıyorum.",
-    cevap: 9,
+    metin: "Odunpazarı ve OMM aynı güne rahat sığıyor mu? Kahve molası için sakin bir yer arıyorum.",
+    cevap: 0,
     likes: 14,
     category: "📍 Rota Tavsiyesi",
   },
@@ -49,9 +56,8 @@ const BASLANGIC_KONUSMALARI: DiscussionPost[] = [
     mekan: "Porsuk Çayı",
     yazar: "Yağmur T.",
     zaman: "Dün",
-    metin:
-      "Porsuk çevresinde akşam yürüyüşü ve gondol turu için en güzel saat sizce ne zaman?",
-    cevap: 5,
+    metin: "Porsuk çevresinde akşam yürüyüşü ve gondol turu için en güzel saat sizce ne zaman?",
+    cevap: 0,
     likes: 8,
     category: "💬 Soru",
   },
@@ -61,9 +67,8 @@ const BASLANGIC_KONUSMALARI: DiscussionPost[] = [
     mekan: "Balat Sokakları",
     yazar: "Ece K.",
     zaman: "2 gün önce",
-    metin:
-      "Balat için pazar sabahı mı daha iyi, yoksa hafta içi sakinliği mi? Fotoğraf çekimi için soruyorum.",
-    cevap: 12,
+    metin: "Balat için pazar sabahı mı daha iyi, yoksa hafta içi sakinliği mi? Fotoğraf çekimi için soruyorum.",
+    cevap: 0,
     likes: 23,
     category: "📸 Gezi Notu",
   },
@@ -73,9 +78,8 @@ const BASLANGIC_KONUSMALARI: DiscussionPost[] = [
     mekan: "Kemeraltı Çarşısı",
     yazar: "Mert B.",
     zaman: "3 gün önce",
-    metin:
-      "Kemeraltı'nda dibek kahvesi ve meşhur lezzetler için küçük durak önerisi olan var mı?",
-    cevap: 7,
+    metin: "Kemeraltı'nda dibek kahvesi ve meşhur lezzetler için küçük durak önerisi olan var mı?",
+    cevap: 0,
     likes: 11,
     category: "🍰 Gurme & Lezzet",
   },
@@ -85,92 +89,132 @@ const BASLANGIC_KONUSMALARI: DiscussionPost[] = [
     mekan: "Kaleiçi",
     yazar: "Deniz A.",
     zaman: "1 hafta önce",
-    metin:
-      "Kaleiçi rotasında fotoğraflık ama çok kalabalık olmayan dar sokak önerisi arıyorum.",
-    cevap: 18,
+    metin: "Kaleiçi rotasında fotoğraflık ama çok kalabalık olmayan dar sokak önerisi arıyorum.",
+    cevap: 0,
     likes: 31,
     category: "📍 Rota Tavsiyesi",
   },
 ];
 
+const BASLANGIC_YANITLARI: DiscussionReply[] = [
+  {
+    id: "reply-demo-1",
+    postId: "eskisehir-odunpazari",
+    yazar: "Can B.",
+    metin: "Aynı güne sığar. OMM için sabahı, Odunpazarı sokakları için öğleden sonrayı ayırmak güzel oluyor.",
+    zaman: "Bugün",
+  },
+  {
+    id: "reply-demo-2",
+    postId: "eskisehir-odunpazari",
+    yazar: "Derya K.",
+    metin: "Kahve için Kurşunlu Külliyesi çevresindeki küçük yerler daha sakin.",
+    zaman: "Bugün",
+  },
+  {
+    id: "reply-demo-3",
+    postId: "eskisehir-porsuk",
+    yazar: "Ali R.",
+    metin: "Gün batımından hemen önce çok keyifli, ışık da fotoğraf için güzel oluyor.",
+    zaman: "Dün",
+  },
+];
+
+function formatDate(value: any) {
+  if (value?.toDate) {
+    return value.toDate().toLocaleDateString("tr-TR");
+  }
+  return "Şimdi";
+}
+
 export default function Topluluk() {
   const { user } = useAuth();
   const [sehirId, setSehirId] = useState("eskisehir");
   const [konusmalar, setKonusmalar] = useState<DiscussionPost[]>(BASLANGIC_KONUSMALARI);
+  const [yanitlar, setYanitlar] = useState<Record<string, DiscussionReply[]>>({});
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  
-  // Form State
   const [yeniMekan, setYeniMekan] = useState("");
   const [yeniMetin, setYeniMetin] = useState("");
   const [yeniCategory, setYeniCategory] = useState("📍 Rota Tavsiyesi");
   const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>({});
+  const [aktifYanitPostId, setAktifYanitPostId] = useState<string | null>(null);
+  const [yanitMetinleri, setYanitMetinleri] = useState<Record<string, string>>({});
+  const [formHata, setFormHata] = useState("");
+  const [yanitHata, setYanitHata] = useState("");
 
   const seciliSehir = sehirler.find((sehir) => sehir.id === sehirId) ?? sehirler[0];
 
-  // Firebase & LocalStorage Sync
   useEffect(() => {
-    let localPosts: DiscussionPost[] = [];
-    try {
-      const savedLocal = localStorage.getItem("whib_community_posts");
-      if (savedLocal) {
-        localPosts = JSON.parse(savedLocal);
-      }
-    } catch (e) {
-      console.error(e);
+    const savedLocal = localStorage.getItem("whib_community_posts");
+    const localPosts = savedLocal ? JSON.parse(savedLocal) : [];
+
+    if (!db) {
+      setKonusmalar([...localPosts, ...BASLANGIC_KONUSMALARI]);
+      return;
     }
 
-    if (db) {
-      try {
-        const q = query(collection(db, "discussions"), orderBy("createdAt", "desc"));
-        const unsubscribe = onSnapshot(
-          q,
-          (snapshot) => {
-            if (!snapshot.empty) {
-              const remotePosts: DiscussionPost[] = snapshot.docs.map((docSnap) => {
-                const data = docSnap.data();
-                return {
-                  id: docSnap.id,
-                  sehirId: data.sehirId || "eskisehir",
-                  mekan: data.mekan || "",
-                  yazar: data.yazar || "Gezgin",
-                  zaman: data.createdAt?.toDate
-                    ? data.createdAt.toDate().toLocaleDateString("tr-TR")
-                    : "Şimdi",
-                  metin: data.metin || "",
-                  cevap: data.cevap || 0,
-                  likes: data.likes || 0,
-                  category: data.category || "📍 Rota Tavsiyesi",
-                };
-              });
+    const q = query(collection(db, "discussions"), orderBy("createdAt", "desc"));
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const remotePosts = snapshot.docs.map((docSnap) => {
+          const data = docSnap.data();
+          return {
+            id: docSnap.id,
+            sehirId: data.sehirId || "eskisehir",
+            mekan: data.mekan || "",
+            yazar: data.yazar || "Gezgin",
+            zaman: formatDate(data.createdAt),
+            metin: data.metin || "",
+            cevap: Number(data.cevap) || 0,
+            likes: Number(data.likes) || 0,
+            category: data.category || "📍 Rota Tavsiyesi",
+          };
+        });
 
-              const combined = [...remotePosts];
-              BASLANGIC_KONUSMALARI.forEach((b) => {
-                if (!combined.some((c) => c.id === b.id)) {
-                  combined.push(b);
-                }
-              });
-              setKonusmalar(combined);
-            }
-          },
-          (err) => {
-            console.warn("Firestore snapshot error:", err);
-          },
-        );
-        return () => unsubscribe();
-      } catch (err) {
-        console.warn("Firestore connection error:", err);
-      }
+        const combined = [...remotePosts];
+        BASLANGIC_KONUSMALARI.forEach((post) => {
+          if (!combined.some((item) => item.id === post.id)) {
+            combined.push(post);
+          }
+        });
+        setKonusmalar(combined);
+      },
+      (err) => console.warn("Firestore discussions snapshot error:", err),
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const savedLocal = localStorage.getItem("whib_community_replies");
+    const localReplies: DiscussionReply[] = savedLocal ? JSON.parse(savedLocal) : [];
+
+    if (!db) {
+      setYanitlar(groupReplies(localReplies));
+      return;
     }
 
-    if (localPosts.length > 0) {
-      const combined = [...localPosts];
-      BASLANGIC_KONUSMALARI.forEach((b) => {
-        if (!combined.some((c) => c.id === b.id)) {
-          combined.push(b);
-        }
-      });
-      setKonusmalar(combined);
-    }
+    const q = query(collection(db, "discussion_replies"), orderBy("createdAt", "asc"));
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const remoteReplies = snapshot.docs.map((docSnap) => {
+          const data = docSnap.data();
+          return {
+            id: docSnap.id,
+            postId: data.postId || "",
+            yazar: data.yazar || "Gezgin",
+            metin: data.metin || "",
+            zaman: formatDate(data.createdAt),
+          };
+        });
+        setYanitlar(groupReplies(remoteReplies));
+      },
+      (err) => console.warn("Firestore replies snapshot error:", err),
+    );
+
+    return () => unsubscribe();
   }, []);
 
   const sehirKonusmalari = useMemo(() => {
@@ -181,82 +225,142 @@ export default function Topluluk() {
     });
   }, [konusmalar, sehirId, selectedCategory]);
 
-  const handleLike = async (postId: string) => {
+  async function handleLike(postId: string) {
     const isLikedNow = !likedPosts[postId];
     setLikedPosts((prev) => ({ ...prev, [postId]: isLikedNow }));
-
     setKonusmalar((prev) =>
-      prev.map((post) => {
-        if (post.id === postId) {
-          return {
-            ...post,
-            likes: isLikedNow ? post.likes + 1 : Math.max(0, post.likes - 1),
-          };
-        }
-        return post;
-      }),
+      prev.map((post) =>
+        post.id === postId
+          ? { ...post, likes: isLikedNow ? post.likes + 1 : Math.max(0, post.likes - 1) }
+          : post,
+      ),
     );
 
-    if (db && !postId.startsWith("post-") && !BASLANGIC_KONUSMALARI.some((b) => b.id === postId)) {
+    if (db && !isBaslangicPost(postId)) {
       try {
-        const postRef = doc(db, "discussions", postId);
-        await updateDoc(postRef, {
+        await updateDoc(doc(db, "discussions", postId), {
           likes: increment(isLikedNow ? 1 : -1),
         });
       } catch (err) {
         console.error("Firestore like error:", err);
       }
     }
-  };
+  }
 
-  const handleCreatePost = async (e: React.FormEvent) => {
+  async function handleCreatePost(e: React.FormEvent) {
     e.preventDefault();
+    setFormHata("");
     if (!yeniMetin.trim()) return;
+    if (!user) {
+      setFormHata("Sohbet başlatmak için giriş yapmalısın.");
+      return;
+    }
 
-    const yazarAd = user?.displayName || user?.email?.split("@")[0] || "Gezgin Kullanıcı";
+    const yazarAd = user.displayName || user.email?.split("@")[0] || "Gezgin Kullanıcı";
     const mekanAd = yeniMekan.trim() || seciliSehir.ad;
-
-    const newPostState: DiscussionPost = {
-      id: `post-${Date.now()}`,
-      sehirId: sehirId,
+    const postData = {
+      sehirId,
       mekan: mekanAd,
       yazar: yazarAd,
-      zaman: "Şimdi",
       metin: yeniMetin.trim(),
       cevap: 0,
-      likes: 1,
+      likes: 0,
       category: yeniCategory,
     };
 
-    setKonusmalar((prev) => [newPostState, ...prev]);
-
-    try {
-      const existing = JSON.parse(localStorage.getItem("whib_community_posts") || "[]");
-      localStorage.setItem("whib_community_posts", JSON.stringify([newPostState, ...existing]));
-    } catch (err) {
-      console.error(err);
-    }
-
     if (db) {
       try {
-        await addDoc(collection(db, "discussions"), {
-          sehirId: sehirId,
-          mekan: mekanAd,
-          yazar: yazarAd,
-          metin: yeniMetin.trim(),
-          cevap: 0,
-          likes: 1,
-          category: yeniCategory,
+        const created = await addDoc(collection(db, "discussions"), {
+          ...postData,
+          userId: user.uid,
+          userEmail: user.email,
           createdAt: serverTimestamp(),
         });
+        setKonusmalar((prev) => [
+          {
+            id: created.id,
+            zaman: "Şimdi",
+            ...postData,
+          },
+          ...prev.filter((post) => post.id !== created.id),
+        ]);
       } catch (err) {
         console.error("Firestore post creation error:", err);
+        setFormHata("Mesaj Firestore'a kaydedilemedi. Rules ve giriş durumunu kontrol et.");
+        return;
       }
+    } else {
+      const newPost = {
+        id: `post-${Date.now()}`,
+        zaman: "Şimdi",
+        ...postData,
+      };
+      setKonusmalar((prev) => [newPost, ...prev]);
+      const existing = JSON.parse(localStorage.getItem("whib_community_posts") || "[]");
+      localStorage.setItem("whib_community_posts", JSON.stringify([newPost, ...existing]));
     }
 
     setYeniMekan("");
     setYeniMetin("");
-  };
+    setYeniCategory("📍 Rota Tavsiyesi");
+  }
+
+  async function handleCreateReply(postId: string) {
+    setYanitHata("");
+    const metin = (yanitMetinleri[postId] || "").trim();
+    if (!metin) return;
+    if (!user) {
+      setYanitHata("Yanıt yazmak için giriş yapmalısın.");
+      return;
+    }
+
+    const yazarAd = user.displayName || user.email?.split("@")[0] || "Gezgin Kullanıcı";
+    const newReply = {
+      id: `reply-${Date.now()}`,
+      postId,
+      yazar: yazarAd,
+      metin,
+      zaman: "Şimdi",
+    };
+
+    if (db) {
+      try {
+        const created = await addDoc(collection(db, "discussion_replies"), {
+          userId: user.uid,
+          userEmail: user.email,
+          postId,
+          yazar: yazarAd,
+          metin,
+          createdAt: serverTimestamp(),
+        });
+        if (!isBaslangicPost(postId)) {
+          try {
+            await updateDoc(doc(db, "discussions", postId), { cevap: increment(1) });
+          } catch (countError) {
+            console.warn("Firestore reply count update error:", countError);
+          }
+        }
+        newReply.id = created.id;
+      } catch (err) {
+        console.error("Firestore reply creation error:", err);
+        setYanitHata("Yanıt kaydedilemedi. Rules ve giriş durumunu kontrol et.");
+        return;
+      }
+    } else {
+      const existing = JSON.parse(localStorage.getItem("whib_community_replies") || "[]");
+      localStorage.setItem("whib_community_replies", JSON.stringify([...existing, newReply]));
+    }
+
+    setYanitlar((prev) => ({
+      ...prev,
+      [postId]: [...(prev[postId] || []), newReply],
+    }));
+    setKonusmalar((prev) =>
+      prev.map((post) => (post.id === postId ? { ...post, cevap: post.cevap + 1 } : post)),
+    );
+    setYanitMetinleri((prev) => ({ ...prev, [postId]: "" }));
+    setAktifYanitPostId(postId);
+  }
 
   return (
     <main className="page-shell">
@@ -272,7 +376,7 @@ export default function Topluluk() {
           </p>
         </div>
         <label className="city-select">
-          <span>Şehir Seçin</span>
+          <span>Şehir seçin</span>
           <select onChange={(event) => setSehirId(event.target.value)} value={sehirId}>
             {sehirler.map((sehir) => (
               <option key={sehir.id} value={sehir.id}>
@@ -283,50 +387,26 @@ export default function Topluluk() {
         </label>
       </section>
 
-      {/* Kategori Filtre Çubuğu */}
       <div className="community-filters">
-        <button
-          className={`filter-chip ${selectedCategory === "all" ? "active" : ""}`}
-          onClick={() => setSelectedCategory("all")}
-          type="button"
-        >
-          🌟 Tüm Başlıklar
-        </button>
-        <button
-          className={`filter-chip ${selectedCategory === "📍 Rota Tavsiyesi" ? "active" : ""}`}
-          onClick={() => setSelectedCategory("📍 Rota Tavsiyesi")}
-          type="button"
-        >
-          📍 Rota Tavsiyeleri
-        </button>
-        <button
-          className={`filter-chip ${selectedCategory === "💬 Soru" ? "active" : ""}`}
-          onClick={() => setSelectedCategory("💬 Soru")}
-          type="button"
-        >
-          💬 Sorular & Cevaplar
-        </button>
-        <button
-          className={`filter-chip ${selectedCategory === "📸 Gezi Notu" ? "active" : ""}`}
-          onClick={() => setSelectedCategory("📸 Gezi Notu")}
-          type="button"
-        >
-          📸 Gezi Fotoğrafları & Notlar
-        </button>
-        <button
-          className={`filter-chip ${selectedCategory === "🍰 Gurme & Lezzet" ? "active" : ""}`}
-          onClick={() => setSelectedCategory("🍰 Gurme & Lezzet")}
-          type="button"
-        >
-          🍰 Gurme & Lezzet
-        </button>
+        {["all", "📍 Rota Tavsiyesi", "💬 Soru", "📸 Gezi Notu", "🍰 Gurme & Lezzet"].map(
+          (category) => (
+            <button
+              className={`filter-chip ${selectedCategory === category ? "active" : ""}`}
+              key={category}
+              onClick={() => setSelectedCategory(category)}
+              type="button"
+            >
+              {category === "all" ? "🌟 Tüm Başlıklar" : category}
+            </button>
+          ),
+        )}
       </div>
 
       <section className="community-layout">
         <div className="discussion-list">
           <div className="section-title">
             <span className="small-label">{seciliSehir.ad} sohbetleri</span>
-            <strong>{sehirKonusmalari.length} Konu Başlığı</strong>
+            <strong>{sehirKonusmalari.length} konu başlığı</strong>
           </div>
 
           {sehirKonusmalari.length === 0 ? (
@@ -334,35 +414,96 @@ export default function Topluluk() {
               <p>Bu şehir için henüz başlık açılmamış. İlk sohbeti sen başlat!</p>
             </div>
           ) : (
-            sehirKonusmalari.map((konusma) => (
-              <article className="discussion-card" key={konusma.id}>
-                <div className="discussion-meta">
-                  <div className="author-info">
-                    <span className="author-avatar">👤</span>
-                    <strong>{konusma.yazar}</strong>
+            sehirKonusmalari.map((konusma) => {
+              const postReplies = yanitlar[konusma.id] || [];
+              return (
+                <article className="discussion-card" key={konusma.id}>
+                  <div className="discussion-meta">
+                    <div className="author-info">
+                      <span className="author-avatar">👤</span>
+                      <strong>{konusma.yazar}</strong>
+                    </div>
+                    <span>{konusma.zaman}</span>
                   </div>
-                  <span>{konusma.zaman}</span>
-                </div>
-                
-                <div className="discussion-pills">
-                  <span className="place-pill">📍 {konusma.mekan}</span>
-                  <span className="category-pill">{konusma.category}</span>
-                </div>
 
-                <p>{konusma.metin}</p>
+                  <div className="discussion-pills">
+                    <span className="place-pill">📍 {konusma.mekan}</span>
+                    <span className="category-pill">{konusma.category}</span>
+                  </div>
 
-                <div className="discussion-actions">
-                  <button
-                    className={`like-btn ${likedPosts[konusma.id] ? "liked" : ""}`}
-                    onClick={() => handleLike(konusma.id)}
-                    type="button"
-                  >
-                    {likedPosts[konusma.id] ? "❤️" : "🤍"} {konusma.likes} Beğeni
-                  </button>
-                  <span className="reply-count">💬 {konusma.cevap} Yanıt</span>
-                </div>
-              </article>
-            ))
+                  <p>{konusma.metin}</p>
+
+                  <div className="discussion-actions">
+                    <button
+                      className={`like-btn ${likedPosts[konusma.id] ? "liked" : ""}`}
+                      onClick={() => handleLike(konusma.id)}
+                      type="button"
+                    >
+                      {likedPosts[konusma.id] ? "❤️" : "🤍"} {konusma.likes} Beğeni
+                    </button>
+                    <button
+                      className="reply-toggle-btn"
+                      onClick={() =>
+                        setAktifYanitPostId(
+                          aktifYanitPostId === konusma.id ? null : konusma.id,
+                        )
+                      }
+                      type="button"
+                    >
+                      💬 {postReplies.length} Yanıt
+                    </button>
+                  </div>
+
+                  {(aktifYanitPostId === konusma.id || postReplies.length > 0) && (
+                    <div className="reply-thread">
+                      {postReplies.length > 0 ? (
+                        postReplies.map((yanit) => (
+                          <div className="reply-card" key={yanit.id}>
+                            <div className="reply-meta">
+                              <strong>{yanit.yazar}</strong>
+                              <span>{yanit.zaman}</span>
+                            </div>
+                            <p>{yanit.metin}</p>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="empty-replies">Henüz yanıt yok. İlk cevabı sen yaz.</p>
+                      )}
+
+                      {user ? (
+                        <form
+                          className="reply-form"
+                          onSubmit={(event) => {
+                            event.preventDefault();
+                            handleCreateReply(konusma.id);
+                          }}
+                        >
+                          <textarea
+                            onChange={(event) =>
+                              setYanitMetinleri((prev) => ({
+                                ...prev,
+                                [konusma.id]: event.target.value,
+                              }))
+                            }
+                            placeholder="Yanıtını yaz..."
+                            rows={2}
+                            value={yanitMetinleri[konusma.id] || ""}
+                          />
+                          <button type="submit">Yanıt gönder</button>
+                        </form>
+                      ) : (
+                        <Link className="outline-link compact-link" href="/giris">
+                          Yanıt yazmak için giriş yap
+                        </Link>
+                      )}
+                      {yanitHata && aktifYanitPostId === konusma.id && (
+                        <div className="form-alert">{yanitHata}</div>
+                      )}
+                    </div>
+                  )}
+                </article>
+              );
+            })
           )}
         </div>
 
@@ -372,20 +513,17 @@ export default function Topluluk() {
           {user ? (
             <form onSubmit={handleCreatePost}>
               <label>
-                <span>Mekan veya Konu Başlığı</span>
+                <span>Mekan veya konu başlığı</span>
                 <input
                   onChange={(e) => setYeniMekan(e.target.value)}
-                  placeholder="Örn: Balat Sahil Yürüyüş Rotaları"
+                  placeholder="Örn: Balat sahil yürüyüş rotaları"
                   value={yeniMekan}
                 />
               </label>
 
               <label>
                 <span>Kategori</span>
-                <select
-                  onChange={(e) => setYeniCategory(e.target.value)}
-                  value={yeniCategory}
-                >
+                <select onChange={(e) => setYeniCategory(e.target.value)} value={yeniCategory}>
                   <option value="📍 Rota Tavsiyesi">📍 Rota Tavsiyesi</option>
                   <option value="💬 Soru">💬 Soru</option>
                   <option value="📸 Gezi Notu">📸 Gezi Notu</option>
@@ -405,6 +543,7 @@ export default function Topluluk() {
               </label>
 
               <button type="submit">✨ Sohbeti Başlat</button>
+              {formHata && <div className="form-alert">{formHata}</div>}
             </form>
           ) : (
             <div className="locked-panel compact-lock">
@@ -424,4 +563,16 @@ export default function Topluluk() {
       </section>
     </main>
   );
+}
+
+function groupReplies(replies: DiscussionReply[]) {
+  return replies.reduce<Record<string, DiscussionReply[]>>((acc, reply) => {
+    if (!reply.postId) return acc;
+    acc[reply.postId] = [...(acc[reply.postId] || []), reply];
+    return acc;
+  }, {});
+}
+
+function isBaslangicPost(postId: string) {
+  return BASLANGIC_KONUSMALARI.some((post) => post.id === postId);
 }

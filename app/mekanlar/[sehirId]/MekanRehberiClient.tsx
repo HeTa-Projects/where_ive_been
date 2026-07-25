@@ -40,6 +40,7 @@ export function MekanRehberiClient({
   // Yeni Yorum Form State
   const [yeniMetin, setYeniMetin] = useState("");
   const [yeniPuan, setYeniPuan] = useState(5);
+  const [formHata, setFormHata] = useState("");
 
   const seciliMekan = useMemo(
     () =>
@@ -97,7 +98,12 @@ export function MekanRehberiClient({
 
   const handleAddYorum = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormHata("");
     if (!yeniMetin.trim()) return;
+    if (!user) {
+      setFormHata("Yorum yazmak için giriş yapmalısın.");
+      return;
+    }
 
     const yazarAd = user?.displayName || user?.email?.split("@")[0] || "Gezgin Kullanıcı";
     const yeniYorum: Yorum = {
@@ -116,6 +122,9 @@ export function MekanRehberiClient({
     if (db) {
       try {
         await addDoc(collection(db, "place_reviews"), {
+          userId: user.uid,
+          userEmail: user.email,
+          sehirId: sehir.id,
           placeId: seciliMekan.id,
           yazar: yazarAd,
           puan: yeniPuan,
@@ -124,6 +133,14 @@ export function MekanRehberiClient({
         });
       } catch (err) {
         console.error("Firestore comment add error:", err);
+        setFormHata("Yorum Firestore'a kaydedilemedi. Rules ve giriş durumunu kontrol et.");
+        setYorumlarMap((prev) => ({
+          ...prev,
+          [seciliMekan.id]: (prev[seciliMekan.id] || []).filter(
+            (yorum) => yorum.id !== yeniYorum.id,
+          ),
+        }));
+        return;
       }
     }
 
@@ -228,6 +245,7 @@ export function MekanRehberiClient({
                   value={yeniMetin}
                 />
                 <button type="submit">Yorumu Gönder ✨</button>
+                {formHata && <div className="form-alert">{formHata}</div>}
               </form>
 
               {/* Yorum Listesi */}

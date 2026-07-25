@@ -3,7 +3,16 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+} from "firebase/firestore";
 import { Navbar } from "./Navbar";
 import { useAuth } from "./AuthProvider";
 import { db } from "./firebase";
@@ -32,6 +41,7 @@ export default function Home() {
   const [userPins, setUserPins] = useState<UserPin[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [pinHata, setPinHata] = useState("");
 
   // Kullanıcının kaydettiği pinleri Firestore & LocalStorage senkronize et
   useEffect(() => {
@@ -84,6 +94,37 @@ export default function Home() {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (!db) return;
+
+    const q = query(collection(db, "public_pins"), orderBy("createdAt", "desc"));
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const pins = snapshot.docs.map((docSnap) => {
+          const data = docSnap.data();
+          return {
+            id: docSnap.id,
+            lat: Number(data.lat),
+            lng: Number(data.lng),
+            title: data.title || "Harita pini",
+            category: data.category || "visited",
+            note: data.note || "",
+            userId: data.userId || "",
+            userName: data.userName || "Gezgin",
+          } satisfies UserPin;
+        });
+        setUserPins(pins);
+      },
+      (err) => {
+        console.warn("Firestore public pins sync error:", err);
+        setPinHata("Ortak pinler Firestore'dan okunamadı. Rules kısmını kontrol et.");
+      },
+    );
+
+    return () => unsubscribe();
+  }, []);
+
   const ulkeSehirleri = useMemo(() => {
     return sehirler.filter((s) => s.ulkeId === selectedCountry.id);
   }, [selectedCountry.id]);
@@ -127,6 +168,7 @@ export default function Home() {
     ) ?? 0;
 
   const handleAddNewUserPin = async (pinData: Omit<UserPin, "id">) => {
+    setPinHata("");
     if (!user) {
       setShowAuthModal(true);
       return;
@@ -134,18 +176,38 @@ export default function Home() {
     const newPin: UserPin = {
       ...pinData,
       id: `pin-${Date.now()}`,
+      userId: user.uid,
+      userName: user.displayName || user.email.split("@")[0] || "Gezgin",
     };
     const updated = [newPin, ...userPins];
     setUserPins(updated);
     const storageKey = `whib_user_pins_${user.uid}`;
     localStorage.setItem(storageKey, JSON.stringify(updated));
 
-    if (db) {
-      try {
-        await setDoc(doc(db, "users", user.uid), { pins: updated }, { merge: true });
-      } catch (err) {
-        console.error("Firestore pin save error:", err);
-      }
+    if (!db) {
+      setPinHata("Firebase bağlantısı hazır olmadığı için pin kaydedilemedi.");
+      setUserPins(userPins);
+      localStorage.setItem(storageKey, JSON.stringify(userPins));
+      return;
+    }
+
+    try {
+      await addDoc(collection(db, "public_pins"), {
+        lat: newPin.lat,
+        lng: newPin.lng,
+        title: newPin.title,
+        category: newPin.category,
+        note: newPin.note || "",
+        userId: user.uid,
+        userEmail: user.email,
+        userName: newPin.userName,
+        createdAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.error("Firestore pin save error:", err);
+      setPinHata("Pin Firestore'a kaydedilemedi. Rules kısmını güncellediğinden emin ol.");
+      setUserPins(userPins);
+      localStorage.setItem(storageKey, JSON.stringify(userPins));
     }
   };
 
@@ -158,7 +220,7 @@ export default function Home() {
 
       if (db) {
         try {
-          await setDoc(doc(db, "users", user.uid), { pins: updated }, { merge: true });
+          await deleteDoc(doc(db, "public_pins", pinId));
         } catch (err) {
           console.error("Firestore pin delete error:", err);
         }
@@ -212,6 +274,7 @@ export default function Home() {
         <TravelMap
           cities={haritaSehirleri}
           countries={ulkeler}
+          currentUserId={user?.uid}
           isLoggedIn={!!user}
           onAddNewUserPin={handleAddNewUserPin}
           onAuthRequired={() => setShowAuthModal(true)}
@@ -222,6 +285,8 @@ export default function Home() {
           selectedCountry={selectedCountry}
           userPins={userPins}
         />
+
+        {pinHata && <div className="map-error-badge">{pinHata}</div>}
 
         {!seciliSehir ? (
           <div className="map-hint">
