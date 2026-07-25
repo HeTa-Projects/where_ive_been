@@ -11,7 +11,10 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-export const firebaseHazir = Object.values(firebaseConfig).every(Boolean);
+export const firebaseHazir =
+  Object.values(firebaseConfig).every(Boolean) &&
+  !firebaseConfig.apiKey?.includes("YourApiKeyHere") &&
+  !firebaseConfig.apiKey?.includes("your_api_key");
 
 export const firebaseApp = firebaseHazir
   ? getApps().length
@@ -21,3 +24,4 @@ export const firebaseApp = firebaseHazir
 
 export const auth = firebaseApp ? getAuth(firebaseApp) : null;
 export const db = firebaseApp ? getFirestore(firebaseApp) : null;
+

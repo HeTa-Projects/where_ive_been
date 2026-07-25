@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Navbar } from "../Navbar";
-import { auth } from "../firebase";
+import { auth, firebaseHazir } from "../firebase";
 
 export default function Giris() {
   const router = useRouter();
@@ -18,7 +18,7 @@ export default function Giris() {
     event.preventDefault();
     setHata("");
 
-    if (!auth) {
+    if (!auth || !firebaseHazir) {
       setHata("Firebase ayarları bulunamadı. .env.local dosyasını kontrol et.");
       return;
     }
@@ -44,6 +44,22 @@ export default function Giris() {
           Mekan yorumlarını görmek, toplulukta yazmak ve profilini kullanmak
           için giriş yapmalısın.
         </p>
+
+        {!firebaseHazir && (
+          <div className="firebase-guide-box">
+            <div className="guide-title">
+              <span>🔥 Firebase Kurulumu Gerekli</span>
+            </div>
+            <p>
+              Canlı kullanıcı girişi ve veritabanı için Firebase anahtarların henüz <code>.env.local</code> dosyasına eklenmedi.
+            </p>
+            <ol className="guide-steps">
+              <li><a href="https://console.firebase.google.com/" target="_blank" rel="noreferrer">console.firebase.google.com</a> adresinden ücretsiz bir proje aç.</li>
+              <li>Authentication &gt; Email/Password giriş yöntemini etkinleştir.</li>
+              <li>Web Uygulaması ekle ve verilen anahtarları projedeki <code>.env.local</code> dosyasına yapıştır.</li>
+            </ol>
+          </div>
+        )}
 
         <form className="auth-form" onSubmit={girisYap}>
           <label>
