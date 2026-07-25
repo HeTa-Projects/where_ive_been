@@ -103,6 +103,15 @@ export default function Home() {
     localStorage.setItem(storageKey, JSON.stringify(updated));
   };
 
+  const handleDeleteUserPin = (pinId: string) => {
+    const updated = userPins.filter((pin) => pin.id !== pinId);
+    setUserPins(updated);
+    if (user) {
+      const storageKey = `whib_user_pins_${user.uid}`;
+      localStorage.setItem(storageKey, JSON.stringify(updated));
+    }
+  };
+
   const handleSelectCountry = (country: Ulke) => {
     setSelectedCountry(country);
     setSeciliSehirId(null);
@@ -152,6 +161,7 @@ export default function Home() {
           isLoggedIn={!!user}
           onAddNewUserPin={handleAddNewUserPin}
           onAuthRequired={() => setShowAuthModal(true)}
+          onDeleteUserPin={handleDeleteUserPin}
           onSelectCity={setSeciliSehirId}
           onSelectCountry={handleSelectCountry}
           selectedCity={seciliHaritaSehri}

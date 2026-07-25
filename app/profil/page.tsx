@@ -77,6 +77,14 @@ export default function Profil() {
     reader.readAsDataURL(file);
   };
 
+  const handleDeletePin = (pinId: string) => {
+    const updated = userPins.filter((p) => p.id !== pinId);
+    setUserPins(updated);
+    if (user) {
+      localStorage.setItem(`whib_user_pins_${user.uid}`, JSON.stringify(updated));
+    }
+  };
+
   const totalPins = userPins.length;
   const visitedPins = userPins.filter((p) => p.category === "visited");
   const wishlistPins = userPins.filter((p) => p.category === "wishlist");
@@ -221,7 +229,29 @@ export default function Profil() {
             ) : (
               userPins.map((pin) => (
                 <div className="saved-route-card" key={pin.id}>
-                  <span>📍 {pin.title}</span>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span>📍 {pin.title}</span>
+                    <button
+                      onClick={() => handleDeletePin(pin.id)}
+                      style={{
+                        background: "rgba(244, 63, 94, 0.15)",
+                        border: "1px solid rgba(244, 63, 94, 0.3)",
+                        color: "var(--accent-coral)",
+                        borderRadius: "var(--radius-full)",
+                        width: "28px",
+                        height: "28px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        fontSize: "12px",
+                      }}
+                      title="İşareti Kaldır"
+                      type="button"
+                    >
+                      🗑️
+                    </button>
+                  </div>
                   <small>
                     {pin.category === "visited"
                       ? "✅ Gidildi"

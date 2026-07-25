@@ -1908,11 +1908,12 @@ select option {
   align-self: center;
 }
 
-/* Map Level Navigation Bar (Top Left) */
+/* Map Level Navigation Bar (Bottom Center) */
 .map-level-nav {
   position: absolute;
   bottom: 24px;
-  right: 24px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 500;
   display: flex;
   align-items: center;
@@ -1950,25 +1951,31 @@ select option {
 }
 
 .zoom-out-btn {
-  background: rgba(15, 23, 42, 0.85);
+  background: rgba(15, 23, 42, 0.92);
   backdrop-filter: blur(16px);
-  border: 1px solid rgba(56, 189, 248, 0.3);
-  color: var(--accent-cyan);
+  border: 1.5px solid var(--accent-cyan);
+  color: #ffffff;
   border-radius: var(--radius-full);
-  padding: 8px 16px;
-  font-size: 12px;
-  font-weight: 700;
+  padding: 10px 22px;
+  font-size: 13px;
+  font-weight: 800;
   cursor: pointer;
-  box-shadow: var(--shadow-main);
-  transition: all 0.2s ease;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .zoom-out-btn:hover {
-  background: rgba(56, 189, 248, 0.2);
-  transform: translateY(-2px);
+  background: var(--gradient-brand);
+  color: #090d16;
+  border-color: transparent;
+  transform: scale(1.06);
+  box-shadow: var(--shadow-glow);
 }
 
-/* Custom Country & City Markers */
+/* ===== HARITA PİN TASARIMLARI (v2) ===== */
 .custom-country-pin-wrapper,
 .custom-city-pin-wrapper {
   background: transparent !important;
@@ -1976,42 +1983,157 @@ select option {
   overflow: visible !important;
 }
 
-.country-bubble,
-.city-bubble {
+/* === ÜLKE PİNİ === */
+.cpin-country {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  filter: drop-shadow(0 4px 16px rgba(0,0,0,0.55));
+  transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1), filter 0.22s ease;
+}
+.cpin-country:hover {
+  transform: scale(1.1) translateY(-4px);
+  filter: drop-shadow(0 6px 20px rgba(16,185,129,0.55));
+}
+.cpin-country::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 10px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border: 2px solid #10b981;
+  border-radius: 14px;
+  z-index: 0;
+}
+.cpin-flag {
+  position: relative;
+  z-index: 1;
+  width: 26px;
+  height: 18px;
+  object-fit: cover;
+  border-radius: 4px;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.6);
+  margin: 8px 10px 4px 10px;
+}
+.cpin-label {
+  position: relative;
+  z-index: 1;
+  font-size: 11px;
+  font-weight: 800;
+  color: #f0fdf4;
+  white-space: nowrap;
+  padding: 0 10px 7px;
+  letter-spacing: 0.3px;
+}
+.cpin-tail {
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 10px solid #10b981;
+}
+
+/* === ŞEHİR PİNİ === */
+.cpin-city {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  filter: drop-shadow(0 3px 10px rgba(0,0,0,0.5));
+  transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1), filter 0.22s ease;
+}
+.cpin-city:hover {
+  transform: scale(1.1) translateY(-5px);
+  filter: drop-shadow(0 6px 18px rgba(56,189,248,0.5));
+}
+.cpin-city.active {
+  transform: scale(1.08) translateY(-3px);
+  filter: drop-shadow(0 5px 16px rgba(16,185,129,0.55));
+}
+
+/* Üstteki balon kısmı */
+.cpin-city-label {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: rgba(15, 23, 42, 0.92);
-  backdrop-filter: blur(16px);
-  border: 1.5px solid var(--border-glass);
-  border-radius: var(--radius-full);
-  padding: 6px 14px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+  gap: 5px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+  border: 2px solid #38bdf8;
+  border-radius: 10px;
+  padding: 5px 10px;
   white-space: nowrap;
-  color: var(--text-main);
-  font-size: 13px;
+  position: relative;
+}
+.cpin-city.active .cpin-city-label {
+  background: linear-gradient(135deg, #052e16 0%, #064e3b 100%);
+  border-color: #10b981;
+}
+
+.cpin-city-name {
+  font-size: 11px;
   font-weight: 800;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-  width: max-content;
+  color: #e2e8f0;
+  letter-spacing: 0.2px;
+}
+.cpin-city-badge {
+  font-size: 10px;
+  font-weight: 900;
+  color: #0f172a;
+  background: #38bdf8;
+  border-radius: 20px;
+  padding: 0px 6px;
+  min-width: 16px;
+  text-align: center;
+  line-height: 1.6;
+}
+.cpin-city.active .cpin-city-badge {
+  background: #10b981;
+  color: #022c22;
 }
 
-.country-bubble:hover,
-.city-bubble:hover,
-.city-bubble.active {
-  border-color: var(--accent-emerald);
-  background: rgba(15, 23, 42, 0.98);
-  box-shadow: 0 0 20px var(--accent-emerald-glow);
-  transform: scale(1.08);
+/* Marker nokta / bayrak */
+.cpin-marker {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0f172a, #1e3a5f);
+  border: 2.5px solid #38bdf8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 10px rgba(56,189,248,0.35);
+  margin-top: 3px;
+}
+.cpin-city.active .cpin-marker {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #052e16, #064e3b);
+  box-shadow: 0 2px 10px rgba(16,185,129,0.4);
+}
+.cpin-marker-flag {
+  width: 19px;
+  height: 13px;
+  object-fit: cover;
+  border-radius: 2px;
+}
+.cpin-marker-dot {
+  color: #38bdf8;
+  font-size: 10px;
 }
 
-.country-flag,
-.city-flag {
-  font-size: 16px;
-  line-height: 1;
+/* Alt ok/kuyruk */
+.cpin-city-tail {
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 8px solid #38bdf8;
+  margin-top: -1px;
+}
+.cpin-city.active .cpin-city-tail {
+  border-top-color: #10b981;
 }
 
-/* HD Country Flag Image Badges */
+/* HD Country Flag Image Badges (popup içi) */
 .flag-icon-img {
   width: 20px;
   height: 14px;
@@ -2030,26 +2152,6 @@ select option {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
   margin-right: 6px;
   vertical-align: middle;
-}
-
-.country-name,
-.city-name {
-  font-size: 13px;
-  font-weight: 800;
-  color: #ffffff;
-  white-space: nowrap;
-}
-
-.country-count,
-.city-count {
-  font-size: 11px;
-  font-weight: 800;
-  color: var(--accent-emerald);
-  background: rgba(16, 185, 129, 0.15);
-  padding: 2px 7px;
-  border-radius: var(--radius-full);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  white-space: nowrap;
 }
 
 .country-pulse {
