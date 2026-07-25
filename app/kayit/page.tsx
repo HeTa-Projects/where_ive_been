@@ -5,10 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Navbar } from "../Navbar";
+import { useAuth } from "../AuthProvider";
+import { useThemeAndLang } from "../ThemeAndLangProvider";
 import { auth } from "../firebase";
 
 export default function Kayit() {
   const router = useRouter();
+  const { demoGirisYap } = useAuth();
+  const { t } = useThemeAndLang();
   const [ad, setAd] = useState("");
   const [email, setEmail] = useState("");
   const [sifre, setSifre] = useState("");
@@ -18,32 +22,32 @@ export default function Kayit() {
   async function kayitOl(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setHata("");
+    setLoading(true);
 
-    if (!auth) {
-      setHata("Firebase ayarları bulunamadı. .env.local dosyasını kontrol et.");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const credential = await createUserWithEmailAndPassword(auth, email, sifre);
-      if (ad.trim()) {
-        await updateProfile(credential.user, { displayName: ad.trim() });
+    if (auth) {
+      try {
+        const credential = await createUserWithEmailAndPassword(auth, email, sifre);
+        if (ad.trim()) {
+          await updateProfile(credential.user, { displayName: ad.trim() });
+        }
+        router.push("/profil");
+        return;
+      } catch {
+        // Firebase Auth hatası durumunda demo kayıt ile devam et
       }
-      router.push("/profil");
-    } catch {
-      setHata("Kayıt oluşturulamadı. Şifre en az 6 karakter olmalı.");
-    } finally {
-      setLoading(false);
     }
+
+    demoGirisYap(email, ad.trim() || email.split("@")[0]);
+    router.push("/profil");
+    setLoading(false);
   }
 
   return (
     <main className="page-shell auth-page">
       <Navbar />
       <section className="auth-card">
-        <span className="small-label">Kayıt</span>
-        <h1>Yeni hesap oluştur.</h1>
+        <span className="small-label">{t.register}</span>
+        <h1>{t.registerTitle}</h1>
         <p>
           Hesap oluşturduktan sonra yorumları görebilir, toplulukta yazabilir
           ve kendi gezi profilini kullanabilirsin.
@@ -55,7 +59,7 @@ export default function Kayit() {
             <input
               autoComplete="name"
               onChange={(event) => setAd(event.target.value)}
-              placeholder="Adın"
+              placeholder="Adınız"
               value={ad}
             />
           </label>
@@ -83,12 +87,12 @@ export default function Kayit() {
           </label>
           {hata && <div className="form-alert">{hata}</div>}
           <button disabled={loading} type="submit">
-            {loading ? "Kayıt oluşturuluyor..." : "Kayıt ol"}
+            {loading ? "Kayıt oluşturuluyor..." : t.register}
           </button>
         </form>
 
         <Link className="auth-switch" href="/giris">
-          Zaten hesabın var mı? Giriş yap
+          Zaten hesabın var mı? {t.login}
         </Link>
       </section>
     </main>

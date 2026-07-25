@@ -90,8 +90,8 @@ export const dictionary = {
     emailLabel: "E-Posta Adresiniz",
     messageLabel: "Mesajınız",
     sendBtn: "Mesaj Gönder ✨",
-    loginTitle: "Gezgin Hesabına Giriş Yap",
-    registerTitle: "Yeni Gezgin Hesabı Oluştur",
+    loginTitle: "Hesabına giriş yap.",
+    registerTitle: "Yeni hesap oluştur.",
   },
   en: {
     // Navigation

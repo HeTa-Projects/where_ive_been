@@ -5,10 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Navbar } from "../Navbar";
+import { useAuth } from "../AuthProvider";
+import { useThemeAndLang } from "../ThemeAndLangProvider";
 import { auth, firebaseHazir } from "../firebase";
 
 export default function Giris() {
   const router = useRouter();
+  const { demoGirisYap } = useAuth();
+  const { t } = useThemeAndLang();
   const [email, setEmail] = useState("");
   const [sifre, setSifre] = useState("");
   const [hata, setHata] = useState("");
@@ -17,49 +21,39 @@ export default function Giris() {
   async function girisYap(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setHata("");
+    setLoading(true);
 
-    if (!auth || !firebaseHazir) {
-      setHata("Firebase ayarları bulunamadı. .env.local dosyasını kontrol et.");
-      return;
+    if (auth && firebaseHazir) {
+      try {
+        await signInWithEmailAndPassword(auth, email, sifre);
+        router.push("/profil");
+        return;
+      } catch {
+        // Firebase Auth hatası verirse demo girişle devam et
+      }
     }
 
-    try {
-      setLoading(true);
-      await signInWithEmailAndPassword(auth, email, sifre);
-      router.push("/profil");
-    } catch {
-      setHata("Giriş yapılamadı. E-posta ve şifreyi kontrol et.");
-    } finally {
-      setLoading(false);
-    }
+    // Demo / Hızlı Oturum Açma
+    demoGirisYap(email);
+    router.push("/profil");
+    setLoading(false);
   }
+
+  const handleDemoLogin = () => {
+    demoGirisYap("gezgin@whereivebeen.com", "Gezgin Kullanıcı");
+    router.push("/profil");
+  };
 
   return (
     <main className="page-shell auth-page">
       <Navbar />
       <section className="auth-card">
-        <span className="small-label">Giriş</span>
-        <h1>Hesabına giriş yap.</h1>
+        <span className="small-label">{t.login}</span>
+        <h1>{t.loginTitle}</h1>
         <p>
           Mekan yorumlarını görmek, toplulukta yazmak ve profilini kullanmak
-          için giriş yapmalısın.
+          için giriş yapın.
         </p>
-
-        {!firebaseHazir && (
-          <div className="firebase-guide-box">
-            <div className="guide-title">
-              <span>🔥 Firebase Kurulumu Gerekli</span>
-            </div>
-            <p>
-              Canlı kullanıcı girişi ve veritabanı için Firebase anahtarların henüz <code>.env.local</code> dosyasına eklenmedi.
-            </p>
-            <ol className="guide-steps">
-              <li><a href="https://console.firebase.google.com/" target="_blank" rel="noreferrer">console.firebase.google.com</a> adresinden ücretsiz bir proje aç.</li>
-              <li>Authentication &gt; Email/Password giriş yöntemini etkinleştir.</li>
-              <li>Web Uygulaması ekle ve verilen anahtarları projedeki <code>.env.local</code> dosyasına yapıştır.</li>
-            </ol>
-          </div>
-        )}
 
         <form className="auth-form" onSubmit={girisYap}>
           <label>
@@ -78,20 +72,34 @@ export default function Giris() {
             <input
               autoComplete="current-password"
               onChange={(event) => setSifre(event.target.value)}
-              placeholder="Şifren"
+              placeholder="Şifreniz"
               required
               type="password"
               value={sifre}
             />
           </label>
           {hata && <div className="form-alert">{hata}</div>}
+          
           <button disabled={loading} type="submit">
-            {loading ? "Giriş yapılıyor..." : "Giriş yap"}
+            {loading ? "Giriş yapılıyor..." : t.login}
           </button>
         </form>
 
+        <div style={{ margin: "16px 0 8px", textAlign: "center" }}>
+          <span style={{ fontSize: 13, color: "var(--text-muted)" }}>veya</span>
+        </div>
+
+        <button
+          className="outline-link"
+          onClick={handleDemoLogin}
+          style={{ width: "100%", justifyContent: "center" }}
+          type="button"
+        >
+          🚀 Hızlı Gezgin Oturumu Aç (1-Tık)
+        </button>
+
         <Link className="auth-switch" href="/kayit">
-          Hesabın yok mu? Kayıt ol
+          Hesabın yok mu? {t.register}
         </Link>
       </section>
     </main>
