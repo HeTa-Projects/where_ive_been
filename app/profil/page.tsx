@@ -148,13 +148,6 @@ export default function Profil() {
                 <div className="profile-user-info">
                   <h1>{user.displayName || user.email?.split("@")[0] || "Gezgin Kullanıcı"}</h1>
                   <p>{user.email}</p>
-                  <button
-                    className="edit-photo-pill"
-                    onClick={() => setShowPhotoModal(true)}
-                    type="button"
-                  >
-                    ✨ Fotoğrafı Güncelle
-                  </button>
                 </div>
               </div>
 
