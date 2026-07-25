@@ -129,30 +129,32 @@ export default function Profil() {
             <>
               <div className="profile-header-user">
                 <div
-                  className="profile-avatar-circle clickable-avatar"
+                  className="profile-avatar-wrapper"
                   onClick={() => setShowPhotoModal(true)}
-                  title="Profil Fotoğrafını Değiştir"
+                  title="Profil Fotoğrafını Güncelle"
                 >
-                  {profilePhoto ? (
-                    <img alt="Profil Fotoğrafı" className="avatar-img" src={profilePhoto} />
-                  ) : (
-                    <span>{userInitial}</span>
-                  )}
-                  <div className="avatar-overlay-icon">📷</div>
+                  <div className="profile-avatar-circle">
+                    {profilePhoto ? (
+                      <img alt="Profil Fotoğrafı" className="avatar-img" src={profilePhoto} />
+                    ) : (
+                      <span>{userInitial}</span>
+                    )}
+                  </div>
+                  <button className="avatar-badge-btn" type="button">
+                    📷
+                  </button>
                 </div>
 
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <h1>{user.displayName || user.email?.split("@")[0] || "Gezgin Kullanıcı"}</h1>
-                    <button
-                      className="edit-photo-btn"
-                      onClick={() => setShowPhotoModal(true)}
-                      type="button"
-                    >
-                      📷 Fotoğraf Değiştir
-                    </button>
-                  </div>
+                <div className="profile-user-info">
+                  <h1>{user.displayName || user.email?.split("@")[0] || "Gezgin Kullanıcı"}</h1>
                   <p>{user.email}</p>
+                  <button
+                    className="edit-photo-pill"
+                    onClick={() => setShowPhotoModal(true)}
+                    type="button"
+                  >
+                    ✨ Fotoğrafı Güncelle
+                  </button>
                 </div>
               </div>
 
