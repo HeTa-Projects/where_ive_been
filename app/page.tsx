@@ -117,48 +117,52 @@ export default function Home() {
       <section className="map-hero" aria-label="Harita gezgin ekranı">
         {/* Ülke Seçim Butonları & Kategori Filtre Çubuğu */}
         <div className="map-top-bar">
-          <div className="category-filters">
-            {/* Ülke Seçicileri */}
-            <span className="filter-chip-label">{t.countriesLabel}</span>
-            {ulkeler.map((u) => (
-              <button
-                className={`filter-chip ${selectedCountry.id === u.id ? "active" : ""}`}
-                key={u.id}
-                onClick={() => handleSelectCountry(u)}
-                type="button"
-              >
-                {u.bayrak} {u.ad}
-              </button>
-            ))}
-
-            <span className="filter-chip-divider">|</span>
-
-            {/* Kategori Filtreleri */}
-            <button
-              className={`filter-chip ${activeCategory === "all" ? "active" : ""}`}
-              onClick={() => setActiveCategory("all")}
-              type="button"
-            >
-              🌟 {t.all}
-            </button>
-            <button
-              className={`filter-chip ${activeCategory === "Tarih" ? "active" : ""}`}
-              onClick={() => setActiveCategory("Tarih")}
-              type="button"
-            >
-              🏛️ {t.history}
-            </button>
-            <button
-              className={`filter-chip ${activeCategory === "Sahil" ? "active" : ""}`}
-              onClick={() => setActiveCategory("Sahil")}
-              type="button"
-            >
-              🏖️ {t.beach}
-            </button>
+          {/* Satır 1: Ülke Seçicileri */}
+          <div className="country-chips-row">
+            <span className="filter-chip-label">🌍 {t.countriesLabel}</span>
+            <div className="chips-scroll-container">
+              {ulkeler.map((u) => (
+                <button
+                  className={`filter-chip ${selectedCountry.id === u.id ? "active" : ""}`}
+                  key={u.id}
+                  onClick={() => handleSelectCountry(u)}
+                  type="button"
+                >
+                  {u.bayrak} {u.ad}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div className="map-hint-badge">
-            {t.mapTip}
+          {/* Satır 2: Kategori Filtreleri & Taktik İpucu */}
+          <div className="category-chips-row">
+            <div className="category-filters">
+              <button
+                className={`filter-chip ${activeCategory === "all" ? "active" : ""}`}
+                onClick={() => setActiveCategory("all")}
+                type="button"
+              >
+                🌟 {t.all}
+              </button>
+              <button
+                className={`filter-chip ${activeCategory === "Tarih" ? "active" : ""}`}
+                onClick={() => setActiveCategory("Tarih")}
+                type="button"
+              >
+                🏛️ {t.history}
+              </button>
+              <button
+                className={`filter-chip ${activeCategory === "Sahil" ? "active" : ""}`}
+                onClick={() => setActiveCategory("Sahil")}
+                type="button"
+              >
+                🏖️ {t.beach}
+              </button>
+            </div>
+
+            <div className="map-hint-badge">
+              {t.mapTip}
+            </div>
           </div>
         </div>
 
