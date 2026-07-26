@@ -16,8 +16,8 @@ export const BadgeCard: React.FC<BadgeCardProps> = ({ badge }) => {
 
       <View style={styles.info}>
         <View style={styles.titleRow}>
-          <Text style={styles.title}>{badge.title}</Text>
-          {badge.unlocked && <Text style={styles.unlockedTag}>Kazanıldı</Text>}
+          <Text style={styles.title} numberOfLines={2}>{badge.title}</Text>
+          {badge.unlocked && <Text style={styles.unlockedTag} numberOfLines={1}>Kazanıldı</Text>}
         </View>
         <Text style={styles.description}>{badge.description}</Text>
         <View style={styles.progressTrack}>
@@ -30,16 +30,16 @@ export const BadgeCard: React.FC<BadgeCardProps> = ({ badge }) => {
 };
 
 const styles = StyleSheet.create({
-  card: { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 14, marginBottom: 12, borderWidth: 1 },
+  card: { flexDirection: 'row', alignItems: 'flex-start', padding: 14, borderRadius: 14, marginBottom: 12, borderWidth: 1 },
   cardUnlocked: { backgroundColor: '#111C2F', borderColor: '#263852' },
   cardLocked: { backgroundColor: 'rgba(15, 23, 42, 0.6)', borderColor: '#1E293B' },
   iconContainer: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
   iconUnlocked: { backgroundColor: 'rgba(245, 158, 11, 0.15)' },
   iconLocked: { backgroundColor: '#0B1120' },
-  info: { flex: 1 },
+  info: { flex: 1, minWidth: 0 },
   titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   title: { flex: 1, fontSize: 15, fontWeight: '800', color: '#F8FAFC' },
-  unlockedTag: { fontSize: 11, color: '#F59E0B', fontWeight: '800' },
+  unlockedTag: { flexShrink: 0, maxWidth: 76, fontSize: 11, color: '#F59E0B', fontWeight: '800' },
   description: { fontSize: 12, color: '#94A3B8', marginTop: 2, marginBottom: 8 },
   progressTrack: { height: 6, backgroundColor: '#0B1120', borderRadius: 3, overflow: 'hidden' },
   progressBar: { height: '100%', borderRadius: 3 },

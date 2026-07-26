@@ -67,17 +67,60 @@ export interface BadgeItem {
   unlockedAt?: string;
 }
 
+export interface PinCollection {
+  id: string;
+  title: string;
+  description?: string;
+  pinIds: string[];
+  coverImage?: string;
+  createdAt?: string;
+}
+
 export interface CommunityPost {
   id: string;
+  authorId?: string;
   authorName: string;
-  authorAvatar: string;
+  authorAvatar?: string;
   cityName: string;
   content: string;
   imageUrl?: string;
-  likes: number;
+  likesCount: number;
   commentsCount: number;
   createdAt: string;
+  updatedAt?: string;
+  likedBy?: string[];
   isLiked?: boolean;
+  hidden?: boolean;
+  status?: 'active' | 'hidden';
+}
+
+export interface CommunityComment {
+  id: string;
+  postId: string;
+  authorId?: string;
+  authorName: string;
+  text: string;
+  createdAt: string;
+  hidden?: boolean;
+}
+
+export interface NotificationItem {
+  id: string;
+  type: 'like' | 'comment' | 'system';
+  title: string;
+  body: string;
+  read: boolean;
+  createdAt: string;
+  postId?: string;
+}
+
+export type ReportReason = 'spam' | 'harassment' | 'unsafe' | 'other';
+
+export interface UserSettings {
+  darkMode: boolean;
+  communityNotifications: boolean;
+  syncOnWifiOnly: boolean;
+  language: 'tr' | 'en';
 }
 
 export interface UserProfile {
@@ -91,4 +134,10 @@ export interface UserProfile {
   totalCountries: number;
   totalPins: number;
   level: string;
+  favoritePlace?: string;
+  website?: string;
+  isAdmin?: boolean;
+  firstDestination?: string;
+  onboardingCompleted?: boolean;
+  settings?: UserSettings;
 }

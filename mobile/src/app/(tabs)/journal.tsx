@@ -34,9 +34,9 @@ export default function JournalScreen() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#0B1120" />
       <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>Gezi Günlüğü</Text>
-          <Text style={styles.subtitle}>Her yerin arkasındaki hikayeyi sakla</Text>
+        <View style={styles.headerCopy}>
+          <Text style={styles.title} numberOfLines={1}>Gezi Günlüğü</Text>
+          <Text style={styles.subtitle} numberOfLines={2}>Her yerin arkasındaki hikayeyi sakla</Text>
         </View>
         <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
           <Ionicons name="add" size={21} color="#FFF" />
@@ -52,10 +52,10 @@ export default function JournalScreen() {
             {item.imageUrl && <Image source={{ uri: item.imageUrl }} style={styles.entryImage} />}
             <View style={styles.entryBody}>
               <View style={styles.entryTop}>
-                <Text style={styles.city}>{item.cityName}</Text>
-                <Text style={styles.date}>{item.date}</Text>
+                <Text style={styles.city} numberOfLines={1}>{item.cityName}</Text>
+                <Text style={styles.date} numberOfLines={1}>{item.date}</Text>
               </View>
-              <Text style={styles.entryTitle}>{item.title}</Text>
+              <Text style={styles.entryTitle} numberOfLines={2}>{item.title}</Text>
               <Text style={styles.entryText}>{item.body}</Text>
               {!!item.mood && <Text style={styles.mood}>Ruh hali: {item.mood}</Text>}
             </View>
@@ -99,16 +99,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#1E293B',
   },
+  headerCopy: { flex: 1, minWidth: 0, paddingRight: 12 },
   title: { color: '#F8FAFC', fontSize: 22, fontWeight: '800' },
   subtitle: { color: '#94A3B8', fontSize: 13, marginTop: 2 },
-  addButton: { width: 42, height: 42, borderRadius: 12, backgroundColor: '#0EA5E9', alignItems: 'center', justifyContent: 'center' },
+  addButton: { flexShrink: 0, width: 42, height: 42, borderRadius: 12, backgroundColor: '#0EA5E9', alignItems: 'center', justifyContent: 'center' },
   listContent: { padding: 16, paddingBottom: 28 },
   entryCard: { backgroundColor: '#111C2F', borderWidth: 1, borderColor: '#263852', borderRadius: 14, overflow: 'hidden', marginBottom: 14 },
   entryImage: { width: '100%', height: 150 },
   entryBody: { padding: 14 },
-  entryTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  city: { color: '#38BDF8', fontSize: 12, fontWeight: '800' },
-  date: { color: '#64748B', fontSize: 12 },
+  entryTop: { flexDirection: 'row', gap: 10, justifyContent: 'space-between', marginBottom: 6 },
+  city: { flex: 1, minWidth: 0, color: '#38BDF8', fontSize: 12, fontWeight: '800' },
+  date: { flexShrink: 0, maxWidth: 130, color: '#64748B', fontSize: 12, textAlign: 'right' },
   entryTitle: { color: '#F8FAFC', fontSize: 16, fontWeight: '800', marginBottom: 6 },
   entryText: { color: '#CBD5E1', fontSize: 13, lineHeight: 19 },
   mood: { color: '#F59E0B', fontSize: 12, fontWeight: '700', marginTop: 10 },

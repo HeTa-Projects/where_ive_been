@@ -6,6 +6,8 @@ import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
 import { Spacing } from '@/constants/theme';
+import expoBadge from '@/assets/images/expo-badge.png';
+import expoBadgeWhite from '@/assets/images/expo-badge-white.png';
 
 export function WebBadge() {
   const scheme = useColorScheme();
@@ -16,11 +18,7 @@ export function WebBadge() {
         v{version}
       </ThemedText>
       <Image
-        source={
-          scheme === 'dark'
-            ? require('@/assets/images/expo-badge-white.png')
-            : require('@/assets/images/expo-badge.png')
-        }
+        source={scheme === 'dark' ? expoBadgeWhite : expoBadge}
         style={styles.badgeImage}
       />
     </ThemedView>

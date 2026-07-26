@@ -1,0 +1,197 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner() {
+      return signedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    function isAuthor() {
+      return signedIn() && resource.data.authorId == request.auth.uid;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && request.auth.token.email in [
+          "helinveysanogluu@gmail.com",
+          "tahaemredogan@hotmail.com"
+        ];
+    }
+
+    function isNewOwner() {
+      return signedIn() && request.resource.data.userId == request.auth.uid;
+    }
+
+    function isNewAuthor() {
+      return signedIn() && request.resource.data.authorId == request.auth.uid;
+    }
+
+    function onlyUpdatesStats() {
+      return signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          "likes",
+          "cevap",
+          "likesCount",
+          "likedBy",
+          "commentsCount",
+          "updatedAt"
+        ]);
+    }
+
+    function isValidNewReport() {
+      return signedIn()
+        && request.resource.data.reporterId == request.auth.uid
+        && request.resource.data.targetType == "communityPost"
+        && request.resource.data.status == "open"
+        && request.resource.data.reason in ["spam", "harassment", "unsafe", "other"]
+        && request.resource.data.targetId is string
+        && request.resource.data.targetPreview is string;
+    }
+
+    match /users/{userId} {
+      allow read: if isAdmin() || (signedIn() && request.auth.uid == userId);
+      allow create, update: if signedIn() && request.auth.uid == userId;
+      allow delete: if false;
+
+      match /pins/{pinId} {
+        allow read, create, update, delete: if signedIn() && request.auth.uid == userId;
+      }
+
+      match /journalEntries/{entryId} {
+        allow read, create, update, delete: if signedIn() && request.auth.uid == userId;
+      }
+
+      match /gallery/{photoId} {
+        allow read, create, update, delete: if signedIn() && request.auth.uid == userId;
+      }
+
+      match /collections/{collectionId} {
+        allow read, create, update, delete: if signedIn() && request.auth.uid == userId;
+      }
+
+      match /badges/{badgeId} {
+        allow read, create, update: if signedIn() && request.auth.uid == userId;
+        allow delete: if false;
+      }
+
+      match /notifications/{notificationId} {
+        allow read, update, delete: if signedIn() && request.auth.uid == userId;
+        allow create: if signedIn();
+      }
+
+      match /following/{targetUserId} {
+        allow read, create, delete: if signedIn() && request.auth.uid == userId;
+        allow update: if false;
+      }
+
+      match /devices/{deviceId} {
+        allow read, create, update, delete: if signedIn() && request.auth.uid == userId;
+      }
+
+      match /blockedUsers/{targetUserId} {
+        allow read, create, delete: if signedIn() && request.auth.uid == userId;
+        allow update: if false;
+      }
+    }
+
+    match /publicProfiles/{userId} {
+      allow read: if !(resource.data.hidden == true) || isAdmin() || (signedIn() && request.auth.uid == userId);
+      allow create, update: if signedIn() && request.auth.uid == userId;
+      allow delete: if isAdmin();
+
+      match /followers/{followerId} {
+        allow read: if true;
+        allow create, delete: if signedIn() && request.auth.uid == followerId;
+        allow update: if false;
+      }
+    }
+
+    match /discussions/{postId} {
+      allow read: if true;
+      allow create: if isNewOwner();
+      allow update: if isOwner() || onlyUpdatesStats();
+      allow delete: if isAdmin() || isOwner();
+    }
+
+    match /discussion_replies/{replyId} {
+      allow read: if true;
+      allow create: if isNewOwner();
+      allow update: if isOwner();
+      allow delete: if isAdmin() || isOwner();
+    }
+
+    match /public_pins/{pinId} {
+      allow read: if true;
+      allow create: if isNewOwner();
+      allow update: if isOwner();
+      allow delete: if isAdmin() || isOwner();
+    }
+
+    match /place_reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isNewOwner();
+      allow update: if isOwner();
+      allow delete: if isAdmin() || isOwner();
+    }
+
+    match /routes/{routeId} {
+      allow read: if true;
+      allow create: if isNewOwner();
+      allow update: if isOwner() || onlyUpdatesStats();
+      allow delete: if isAdmin() || isOwner();
+    }
+
+    match /contactMessages/{messageId} {
+      allow create: if isNewOwner();
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /reports/{reportId} {
+      allow create: if isValidNewReport();
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isNewOwner();
+      allow update: if isOwner();
+      allow delete: if isAdmin() || isOwner();
+    }
+
+    match /communityPosts/{postId} {
+      allow read: if true;
+      allow create: if isNewAuthor();
+      allow update: if isAuthor() || onlyUpdatesStats() || isAdmin();
+      allow delete: if isAdmin() || isAuthor();
+
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if isNewAuthor();
+        allow update: if isAuthor() || isAdmin();
+        allow delete: if isAdmin() || isAuthor();
+      }
+    }
+
+    match /cities/{cityId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /places/{placeId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /admins/{adminId} {
+      allow read, write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

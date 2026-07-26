@@ -156,7 +156,7 @@ export const INITIAL_POSTS: CommunityPost[] = [
     cityName: 'Roma',
     content: 'Trasteverede harika bir aile işletmesi taze makarna restoranı buldum. Rezervasyon yaptırmak iyi fikir.',
     imageUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80',
-    likes: 48,
+    likesCount: 48,
     commentsCount: 12,
     createdAt: '2 saat önce',
     isLiked: true,

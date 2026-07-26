@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppData } from '../context/AppDataContext';
 
@@ -44,12 +44,13 @@ export default function AuthScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.keyboard}>
+        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <View style={styles.brand}>
           <View style={styles.logoMark}>
             <Ionicons name="earth" size={34} color="#38BDF8" />
           </View>
-          <Text style={styles.title}>Where I've Been</Text>
+          <Text style={styles.title} numberOfLines={1}>{"Where I've Been"}</Text>
           <Text style={styles.subtitle}>Gezdiğin yerleri, günlüklerini ve fotoğraflarını tek hesapta tut.</Text>
         </View>
 
@@ -105,6 +106,7 @@ export default function AuthScreen() {
             </Text>
           </TouchableOpacity>
         </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -115,10 +117,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0B1120',
   },
-  container: {
+  keyboard: {
     flex: 1,
+  },
+  container: {
+    flexGrow: 1,
     justifyContent: 'center',
     padding: 20,
+    paddingVertical: 28,
   },
   brand: {
     alignItems: 'center',
@@ -136,6 +142,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   title: {
+    maxWidth: '100%',
     color: '#F8FAFC',
     fontSize: 28,
     fontWeight: '800',

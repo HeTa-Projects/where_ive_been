@@ -3,7 +3,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useAppData } from '../context/AppDataContext';
 
 export default function Index() {
-  const { loading, user } = useAppData();
+  const { loading, user, profile, authMode } = useAppData();
 
   if (loading) {
     return (
@@ -13,7 +13,9 @@ export default function Index() {
     );
   }
 
-  return <Redirect href={user ? '/(tabs)' : '/auth'} />;
+  if (!user) return <Redirect href="/auth" />;
+  if (authMode === 'firebase' && !profile.onboardingCompleted) return <Redirect href="/onboarding" />;
+  return <Redirect href="/(tabs)" />;
 }
 
 const styles = StyleSheet.create({

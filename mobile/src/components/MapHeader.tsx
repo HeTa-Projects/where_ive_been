@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { PinCategory } from '../types/travel';
 
 interface MapHeaderProps {
@@ -31,8 +31,8 @@ export const MapHeader: React.FC<MapHeaderProps> = ({
     <View style={styles.container}>
       <View style={styles.topRow}>
         <View style={styles.titleContainer}>
-          <Text style={styles.title}>Where I've Been</Text>
-          <Text style={styles.subtitle}>Gezdiğin, sevdiğin ve hedeflediğin yerler</Text>
+          <Text style={styles.title} numberOfLines={1}>{"Where I've Been"}</Text>
+          <Text style={styles.subtitle} numberOfLines={2}>Gezdiğin, sevdiğin ve hedeflediğin yerler</Text>
         </View>
         <TouchableOpacity style={styles.addButton} onPress={onOpenAddModal} activeOpacity={0.8}>
           <Ionicons name="add" size={22} color="#FFF" />
@@ -67,9 +67,7 @@ export const MapHeader: React.FC<MapHeaderProps> = ({
               onPress={() => onSelectCategory(cat)}
               activeOpacity={0.7}
             >
-              <Text style={[styles.chipText, isSelected ? styles.chipTextActive : styles.chipTextInactive]}>
-                {cat}
-              </Text>
+              <Text style={[styles.chipText, isSelected ? styles.chipTextActive : styles.chipTextInactive]} numberOfLines={1}>{cat}</Text>
             </TouchableOpacity>
           );
         })}
@@ -79,88 +77,20 @@ export const MapHeader: React.FC<MapHeaderProps> = ({
 };
 
 const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 16,
-    backgroundColor: '#0B1120',
-    borderBottomWidth: 1,
-    borderBottomColor: '#1E293B',
-  },
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 14,
-  },
-  titleContainer: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#F8FAFC',
-  },
-  subtitle: {
-    fontSize: 13,
-    color: '#94A3B8',
-    marginTop: 2,
-  },
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#0EA5E9',
-    paddingHorizontal: 13,
-    paddingVertical: 8,
-    borderRadius: 12,
-    gap: 4,
-  },
-  addButtonText: {
-    color: '#FFF',
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#111C2F',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#263852',
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    color: '#F8FAFC',
-    fontSize: 14,
-  },
-  tabRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  chip: {
-    paddingHorizontal: 13,
-    paddingVertical: 7,
-    borderRadius: 10,
-  },
-  chipInactive: {
-    backgroundColor: '#111C2F',
-    borderWidth: 1,
-    borderColor: '#263852',
-  },
-  chipText: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  chipTextActive: {
-    color: '#FFF',
-  },
-  chipTextInactive: {
-    color: '#94A3B8',
-  },
+  container: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 16, backgroundColor: '#0B1120', borderBottomWidth: 1, borderBottomColor: '#1E293B' },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 14 },
+  titleContainer: { flex: 1, minWidth: 0 },
+  title: { fontSize: 22, fontWeight: '800', color: '#F8FAFC' },
+  subtitle: { fontSize: 13, color: '#94A3B8', marginTop: 2 },
+  addButton: { flexDirection: 'row', alignItems: 'center', flexShrink: 0, backgroundColor: '#0EA5E9', paddingHorizontal: 13, paddingVertical: 8, borderRadius: 12, gap: 4 },
+  addButtonText: { color: '#FFF', fontWeight: '700', fontSize: 14 },
+  searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#111C2F', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 12, borderWidth: 1, borderColor: '#263852' },
+  searchIcon: { marginRight: 8 },
+  searchInput: { flex: 1, color: '#F8FAFC', fontSize: 14 },
+  tabRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip: { flexGrow: 1, minWidth: 70, alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 },
+  chipInactive: { backgroundColor: '#111C2F', borderWidth: 1, borderColor: '#263852' },
+  chipText: { fontSize: 13, fontWeight: '700' },
+  chipTextActive: { color: '#FFF' },
+  chipTextInactive: { color: '#94A3B8' },
 });

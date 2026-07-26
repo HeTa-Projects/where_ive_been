@@ -2,6 +2,8 @@
 
 # dependencies
 /node_modules
+/functions/node_modules
+/functions/lib
 /.pnp
 .pnp.*
 .yarn/*
@@ -42,5 +44,6 @@ next-env.d.ts
 /work/
 
 *.log
+*.apk
 dev-server.log
 dev-server.err.log

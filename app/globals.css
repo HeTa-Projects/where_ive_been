@@ -1243,6 +1243,12 @@ input[type="password"]:focus {
   min-width: 0;
 }
 
+.admin-row-actions {
+  display: flex !important;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .admin-list-row span,
 .admin-list-row small {
   color: var(--text-muted);

@@ -1,6 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { FlatList, SafeAreaView, StatusBar, StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { AddPinModal } from '../../components/AddPinModal';
 import { MapHeader } from '../../components/MapHeader';
 import { PinCard } from '../../components/PinCard';
@@ -13,19 +14,22 @@ export default function PinsMapScreen() {
   const [selectedCategory, setSelectedCategory] = useState<'Tümü' | PinCategory>('Tümü');
   const [searchQuery, setSearchQuery] = useState('');
   const [addModalVisible, setAddModalVisible] = useState(false);
+  const [draftLocation, setDraftLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [visibleLayers, setVisibleLayers] = useState<Record<PinCategory, boolean>>({
+    Gittim: true,
+    İstek: true,
+    Favori: true,
+  });
 
   const filteredPins = useMemo(() => {
     return pins.filter((pin) => {
       const matchesCategory = selectedCategory === 'Tümü' || pin.category === selectedCategory;
-      const query = searchQuery.toLowerCase();
-      const matchesSearch =
-        pin.title.toLowerCase().includes(query) ||
-        pin.cityName.toLowerCase().includes(query) ||
-        pin.countryName.toLowerCase().includes(query) ||
-        pin.tags?.some((tag) => tag.toLowerCase().includes(query));
-      return matchesCategory && matchesSearch;
+      const matchesLayer = visibleLayers[pin.category];
+      const query = searchQuery.trim().toLocaleLowerCase('tr-TR');
+      const haystack = [pin.title, pin.cityName, pin.countryName, ...(pin.tags ?? [])].join(' ').toLocaleLowerCase('tr-TR');
+      return matchesLayer && matchesCategory && (!query || haystack.includes(query));
     });
-  }, [pins, searchQuery, selectedCategory]);
+  }, [pins, searchQuery, selectedCategory, visibleLayers]);
 
   const counts = {
     visited: pins.filter((pin) => pin.category === 'Gittim').length,
@@ -50,7 +54,13 @@ export default function PinsMapScreen() {
         keyExtractor={(item) => item.id}
         ListHeaderComponent={
           <>
-            <TravelMap pins={filteredPins} />
+            <TravelMap
+              pins={filteredPins}
+              onLongPress={(coords) => {
+                setDraftLocation(coords);
+                setAddModalVisible(true);
+              }}
+            />
             <View style={styles.statsRow}>
               <View style={styles.statBox}>
                 <Text style={styles.statValue}>{counts.visited}</Text>
@@ -65,9 +75,20 @@ export default function PinsMapScreen() {
                 <Text style={styles.statLabel}>Favori</Text>
               </View>
             </View>
+            <View style={styles.layersRow}>
+              {(['Gittim', 'İstek', 'Favori'] as PinCategory[]).map((layer) => (
+                <Text
+                  key={layer}
+                  onPress={() => setVisibleLayers((current) => ({ ...current, [layer]: !current[layer] }))}
+                  style={[styles.layerChip, !visibleLayers[layer] && styles.layerChipMuted]}
+                >
+                  {visibleLayers[layer] ? '●' : '○'} {layer}
+                </Text>
+              ))}
+            </View>
           </>
         }
-        renderItem={({ item }) => <PinCard pin={item} onDelete={() => deletePin(item.id)} />}
+        renderItem={({ item }) => <PinCard pin={item} onPress={() => router.push(`/pin/${item.id}`)} onDelete={() => deletePin(item.id)} />}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
@@ -78,61 +99,30 @@ export default function PinsMapScreen() {
         }
       />
 
-      <AddPinModal visible={addModalVisible} onClose={() => setAddModalVisible(false)} onAddPin={addPin} />
+      <AddPinModal
+        visible={addModalVisible}
+        initialLocation={draftLocation}
+        onClose={() => {
+          setAddModalVisible(false);
+          setDraftLocation(null);
+        }}
+        onAddPin={addPin}
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#0B1120',
-  },
-  listContent: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 24,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 14,
-  },
-  statBox: {
-    flex: 1,
-    backgroundColor: '#111C2F',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#263852',
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  statValue: {
-    color: '#F8FAFC',
-    fontSize: 20,
-    fontWeight: '800',
-  },
-  statLabel: {
-    color: '#94A3B8',
-    fontSize: 12,
-    marginTop: 2,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
-    paddingHorizontal: 20,
-  },
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#94A3B8',
-    marginTop: 12,
-  },
-  emptyDesc: {
-    fontSize: 13,
-    color: '#64748B',
-    textAlign: 'center',
-    marginTop: 4,
-  },
+  safeArea: { flex: 1, backgroundColor: '#0B1120' },
+  listContent: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24 },
+  statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 14 },
+  layersRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
+  layerChip: { flexGrow: 1, minWidth: 92, textAlign: 'center', color: '#F8FAFC', backgroundColor: '#111C2F', borderWidth: 1, borderColor: '#263852', borderRadius: 10, paddingVertical: 8, paddingHorizontal: 8, fontSize: 12, fontWeight: '800' },
+  layerChipMuted: { color: '#64748B', opacity: 0.7 },
+  statBox: { flexGrow: 1, flexBasis: 92, backgroundColor: '#111C2F', borderRadius: 12, borderWidth: 1, borderColor: '#263852', paddingVertical: 12, alignItems: 'center' },
+  statValue: { color: '#F8FAFC', fontSize: 20, fontWeight: '800' },
+  statLabel: { color: '#94A3B8', fontSize: 12, marginTop: 2 },
+  emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40, paddingHorizontal: 20 },
+  emptyTitle: { fontSize: 16, fontWeight: '800', color: '#94A3B8', marginTop: 12 },
+  emptyDesc: { fontSize: 13, color: '#64748B', textAlign: 'center', marginTop: 4 },
 });
