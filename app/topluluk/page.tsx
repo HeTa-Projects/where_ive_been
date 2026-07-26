@@ -16,11 +16,12 @@ import {
 import { Navbar } from "../Navbar";
 import { useAuth } from "../AuthProvider";
 import { db } from "../firebase";
-import { sehirler } from "../gezi-verileri";
+import { sehirler, ulkeler } from "../gezi-verileri";
 
 type DiscussionPost = {
   id: string;
-  sehirId: string;
+  ulkeId?: string;
+  sehirId?: string;
   mekan: string;
   yazar: string;
   zaman: string;
@@ -41,6 +42,7 @@ type DiscussionReply = {
 const BASLANGIC_KONUSMALARI: DiscussionPost[] = [
   {
     id: "eskisehir-odunpazari",
+    ulkeId: "turkiye",
     sehirId: "eskisehir",
     mekan: "Odunpazarı Evleri",
     yazar: "Selin G.",
@@ -52,6 +54,7 @@ const BASLANGIC_KONUSMALARI: DiscussionPost[] = [
   },
   {
     id: "eskisehir-porsuk",
+    ulkeId: "turkiye",
     sehirId: "eskisehir",
     mekan: "Porsuk Çayı",
     yazar: "Yağmur T.",
@@ -63,6 +66,7 @@ const BASLANGIC_KONUSMALARI: DiscussionPost[] = [
   },
   {
     id: "istanbul-balat",
+    ulkeId: "turkiye",
     sehirId: "istanbul",
     mekan: "Balat Sokakları",
     yazar: "Ece K.",
@@ -74,6 +78,7 @@ const BASLANGIC_KONUSMALARI: DiscussionPost[] = [
   },
   {
     id: "izmir-kemeralti",
+    ulkeId: "turkiye",
     sehirId: "izmir",
     mekan: "Kemeraltı Çarşısı",
     yazar: "Mert B.",
@@ -85,6 +90,7 @@ const BASLANGIC_KONUSMALARI: DiscussionPost[] = [
   },
   {
     id: "antalya-kaleici",
+    ulkeId: "turkiye",
     sehirId: "antalya",
     mekan: "Kaleiçi",
     yazar: "Deniz A.",
@@ -94,29 +100,29 @@ const BASLANGIC_KONUSMALARI: DiscussionPost[] = [
     likes: 31,
     category: "📍 Rota Tavsiyesi",
   },
-];
-
-const BASLANGIC_YANITLARI: DiscussionReply[] = [
   {
-    id: "reply-demo-1",
-    postId: "eskisehir-odunpazari",
-    yazar: "Can B.",
-    metin: "Aynı güne sığar. OMM için sabahı, Odunpazarı sokakları için öğleden sonrayı ayırmak güzel oluyor.",
-    zaman: "Bugün",
+    id: "roma-colosseum",
+    ulkeId: "italya",
+    sehirId: "roma",
+    mekan: "Kolezyum Çevresi",
+    yazar: "Marco T.",
+    zaman: "4 gün önce",
+    metin: "Kolezyum ve Forum Romanum turunu aynı güne planlayanlar için sıra beklemeden hızlı giriş tüyo tavsiyesi var mı?",
+    cevap: 0,
+    likes: 19,
+    category: "💬 Soru",
   },
   {
-    id: "reply-demo-2",
-    postId: "eskisehir-odunpazari",
-    yazar: "Derya K.",
-    metin: "Kahve için Kurşunlu Külliyesi çevresindeki küçük yerler daha sakin.",
-    zaman: "Bugün",
-  },
-  {
-    id: "reply-demo-3",
-    postId: "eskisehir-porsuk",
-    yazar: "Ali R.",
-    metin: "Gün batımından hemen önce çok keyifli, ışık da fotoğraf için güzel oluyor.",
-    zaman: "Dün",
+    id: "tokyo-shibuya",
+    ulkeId: "japonya",
+    sehirId: "tokyo",
+    mekan: "Shibuya Kavşağı",
+    yazar: "Yuki S.",
+    zaman: "5 gün önce",
+    metin: "Shibuya kavşağını yukarıdan izlemek için kahve önerisi olan var mı? Akşam saatlerinde ortam muazzam görünüyor.",
+    cevap: 0,
+    likes: 27,
+    category: "📸 Gezi Notu",
   },
 ];
 
@@ -129,20 +135,39 @@ function formatDate(value: any) {
 
 export default function Topluluk() {
   const { user } = useAuth();
-  const [sehirId, setSehirId] = useState("eskisehir");
-  const [konusmalar, setKonusmalar] = useState<DiscussionPost[]>(BASLANGIC_KONUSMALARI);
-  const [yanitlar, setYanitlar] = useState<Record<string, DiscussionReply[]>>({});
+  
+  // Filtre State'leri (Varsayılan: Tüm Ülkeler ve Tüm Şehirler)
+  const [ulkeFilter, setUlkeFilter] = useState("all");
+  const [sehirFilter, setSehirFilter] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+
+  // Yeni Konu Oluşturma State'leri
+  const [yeniUlkeId, setYeniUlkeId] = useState("turkiye");
+  const [yeniSehirId, setYeniSehirId] = useState("eskisehir");
   const [yeniMekan, setYeniMekan] = useState("");
   const [yeniMetin, setYeniMetin] = useState("");
   const [yeniCategory, setYeniCategory] = useState("📍 Rota Tavsiyesi");
+
+  const [konusmalar, setKonusmalar] = useState<DiscussionPost[]>(BASLANGIC_KONUSMALARI);
+  const [yanitlar, setYanitlar] = useState<Record<string, DiscussionReply[]>>({});
   const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>({});
   const [aktifYanitPostId, setAktifYanitPostId] = useState<string | null>(null);
   const [yanitMetinleri, setYanitMetinleri] = useState<Record<string, string>>({});
   const [formHata, setFormHata] = useState("");
   const [yanitHata, setYanitHata] = useState("");
 
-  const seciliSehir = sehirler.find((sehir) => sehir.id === sehirId) ?? sehirler[0];
+  // Seçilen Ülkeye Göre Filtre Dropdown'ındaki Şehirler
+  const filtreSehirleri = useMemo(() => {
+    if (ulkeFilter === "all") {
+      return sehirler;
+    }
+    return sehirler.filter((sehir) => sehir.ulkeId === ulkeFilter);
+  }, [ulkeFilter]);
+
+  // Yeni Konu Formundaki Ülkeye Göre Şehirler
+  const formSehirleri = useMemo(() => {
+    return sehirler.filter((sehir) => sehir.ulkeId === yeniUlkeId);
+  }, [yeniUlkeId]);
 
   useEffect(() => {
     const savedLocal = localStorage.getItem("whib_community_posts");
@@ -157,10 +182,11 @@ export default function Topluluk() {
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        const remotePosts = snapshot.docs.map((docSnap) => {
+        const remotePosts: DiscussionPost[] = snapshot.docs.map((docSnap) => {
           const data = docSnap.data();
           return {
             id: docSnap.id,
+            ulkeId: data.ulkeId || "turkiye",
             sehirId: data.sehirId || "eskisehir",
             mekan: data.mekan || "",
             yazar: data.yazar || "Gezgin",
@@ -217,13 +243,19 @@ export default function Topluluk() {
     return () => unsubscribe();
   }, []);
 
-  const sehirKonusmalari = useMemo(() => {
+  // Ülke, Şehir ve Kategori Filtrelemesi
+  const suzulenKonusmalar = useMemo(() => {
     return konusmalar.filter((konusma) => {
-      const matchCity = konusma.sehirId === sehirId;
+      const postSehir = sehirler.find((s) => s.id === konusma.sehirId);
+      const postUlkeId = konusma.ulkeId || postSehir?.ulkeId || "turkiye";
+
+      const matchUlke = ulkeFilter === "all" || postUlkeId === ulkeFilter;
+      const matchSehir = sehirFilter === "all" || konusma.sehirId === sehirFilter;
       const matchCat = selectedCategory === "all" || konusma.category === selectedCategory;
-      return matchCity && matchCat;
+
+      return matchUlke && matchSehir && matchCat;
     });
-  }, [konusmalar, sehirId, selectedCategory]);
+  }, [konusmalar, ulkeFilter, sehirFilter, selectedCategory]);
 
   async function handleLike(postId: string) {
     const isLikedNow = !likedPosts[postId];
@@ -257,9 +289,14 @@ export default function Topluluk() {
     }
 
     const yazarAd = user.displayName || user.email?.split("@")[0] || "Gezgin Kullanıcı";
-    const mekanAd = yeniMekan.trim() || seciliSehir.ad;
+    const seciliSehirObj = sehirler.find((s) => s.id === yeniSehirId);
+    const seciliUlkeObj = ulkeler.find((u) => u.id === yeniUlkeId);
+
+    const mekanAd = yeniMekan.trim() || seciliSehirObj?.ad || seciliUlkeObj?.ad || "Genel";
+    
     const postData = {
-      sehirId,
+      ulkeId: yeniUlkeId,
+      sehirId: yeniSehirId,
       mekan: mekanAd,
       yazar: yazarAd,
       metin: yeniMetin.trim(),
@@ -364,29 +401,55 @@ export default function Topluluk() {
 
   return (
     <main className="page-shell">
-      <Navbar mekanHref={`/mekanlar/${sehirId}`} />
+      <Navbar mekanHref={sehirFilter !== "all" ? `/mekanlar/${sehirFilter}` : "/mekanlar/eskisehir"} />
 
       <section className="page-hero">
         <div>
           <span className="small-label">Gezgin Forumu & Topluluk</span>
-          <h1>Şehir seç, gezi sohbetine katıl.</h1>
+          <h1>Dünya genelinde gezgin sohbetleri.</h1>
           <p>
-            Kullanıcılar burada şehir veya mekan hakkında soru sorabilir,
-            deneyim paylaşabilir ve güncel öneriler alabilir.
+            Tüm ülkeler ve şehirlerden gezi soruları, rotalar, mekan önerileri ve deneyim paylaşımları.
           </p>
         </div>
-        <label className="city-select">
-          <span>Şehir seçin</span>
-          <select onChange={(event) => setSehirId(event.target.value)} value={sehirId}>
-            {sehirler.map((sehir) => (
-              <option key={sehir.id} value={sehir.id}>
-                📍 {sehir.ad}
-              </option>
-            ))}
-          </select>
-        </label>
+
+        {/* Ülke ve Şehir Filtreleme Grubu */}
+        <div className="hero-filter-group">
+          <label className="city-select">
+            <span>🌍 Ülke Filtresi</span>
+            <select
+              onChange={(e) => {
+                setUlkeFilter(e.target.value);
+                setSehirFilter("all"); // Ülke değişince şehri sıfırla
+              }}
+              value={ulkeFilter}
+            >
+              <option value="all">🌍 Tüm Ülkeler</option>
+              {ulkeler.map((ulke) => (
+                <option key={ulke.id} value={ulke.id}>
+                  {ulke.bayrak} {ulke.ad}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="city-select">
+            <span>📍 Şehir Filtresi</span>
+            <select
+              onChange={(e) => setSehirFilter(e.target.value)}
+              value={sehirFilter}
+            >
+              <option value="all">📍 Tüm Şehirler</option>
+              {filtreSehirleri.map((sehir) => (
+                <option key={sehir.id} value={sehir.id}>
+                  📍 {sehir.ad}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       </section>
 
+      {/* Kategori Filtreleri */}
       <div className="community-filters">
         {["all", "📍 Rota Tavsiyesi", "💬 Soru", "📸 Gezi Notu", "🍰 Gurme & Lezzet"].map(
           (category) => (
@@ -405,17 +468,27 @@ export default function Topluluk() {
       <section className="community-layout">
         <div className="discussion-list">
           <div className="section-title">
-            <span className="small-label">{seciliSehir.ad} sohbetleri</span>
-            <strong>{sehirKonusmalari.length} konu başlığı</strong>
+            <span className="small-label">
+              {ulkeFilter === "all"
+                ? "Tüm Dünya Sohbetleri"
+                : `${ulkeler.find((u) => u.id === ulkeFilter)?.ad || ""} Sohbetleri`}
+            </span>
+            <strong>{suzulenKonusmalar.length} konu başlığı</strong>
           </div>
 
-          {sehirKonusmalari.length === 0 ? (
+          {suzulenKonusmalar.length === 0 ? (
             <div className="discussion-card">
-              <p>Bu şehir için henüz başlık açılmamış. İlk sohbeti sen başlat!</p>
+              <p>Seçtiğiniz filtreye uygun konu başlığı bulunamadı. İlk sohbeti sen başlat!</p>
             </div>
           ) : (
-            sehirKonusmalari.map((konusma) => {
+            suzulenKonusmalar.map((konusma) => {
               const postReplies = yanitlar[konusma.id] || [];
+
+              // Rozetler için Ülke ve Şehir Nesnelerini Bul
+              const postSehir = sehirler.find((s) => s.id === konusma.sehirId);
+              const postUlkeId = konusma.ulkeId || postSehir?.ulkeId || "turkiye";
+              const postUlke = ulkeler.find((u) => u.id === postUlkeId);
+
               return (
                 <article className="discussion-card" key={konusma.id}>
                   <div className="discussion-meta">
@@ -426,8 +499,21 @@ export default function Topluluk() {
                     <span>{konusma.zaman}</span>
                   </div>
 
+                  {/* Rozetler: Ülke, Şehir, Mekan, Kategori */}
                   <div className="discussion-pills">
-                    <span className="place-pill">📍 {konusma.mekan}</span>
+                    {postUlke && (
+                      <span className="country-pill">
+                        {postUlke.bayrak} {postUlke.ad}
+                      </span>
+                    )}
+                    {postSehir && (
+                      <span className="city-pill">
+                        📍 {postSehir.ad}
+                      </span>
+                    )}
+                    {konusma.mekan && konusma.mekan !== postSehir?.ad && (
+                      <span className="place-pill">🏛️ {konusma.mekan}</span>
+                    )}
                     <span className="category-pill">{konusma.category}</span>
                   </div>
 
@@ -507,13 +593,49 @@ export default function Topluluk() {
           )}
         </div>
 
+        {/* Sağ Panel: Yeni Sohbet Başlat Formu */}
         <aside className="composer-panel">
           <span className="small-label">Yeni sohbet</span>
-          <h2>{seciliSehir.ad} hakkında sor veya paylaş</h2>
+          <h2>Gezi sorun veya önerin için konu başlat</h2>
           {user ? (
             <form onSubmit={handleCreatePost}>
+              {/* Ülke Seçimi */}
               <label>
-                <span>Mekan veya konu başlığı</span>
+                <span>Ülke</span>
+                <select
+                  onChange={(e) => {
+                    const selUlke = e.target.value;
+                    setYeniUlkeId(selUlke);
+                    const avCities = sehirler.filter((s) => s.ulkeId === selUlke);
+                    setYeniSehirId(avCities[0]?.id || "");
+                  }}
+                  value={yeniUlkeId}
+                >
+                  {ulkeler.map((ulke) => (
+                    <option key={ulke.id} value={ulke.id}>
+                      {ulke.bayrak} {ulke.ad}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {/* Şehir Seçimi */}
+              <label>
+                <span>Şehir</span>
+                <select
+                  onChange={(e) => setYeniSehirId(e.target.value)}
+                  value={yeniSehirId}
+                >
+                  {formSehirleri.map((sehir) => (
+                    <option key={sehir.id} value={sehir.id}>
+                      📍 {sehir.ad}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                <span>Mekan veya detay konu başlığı (Opsiyonel)</span>
                 <input
                   onChange={(e) => setYeniMekan(e.target.value)}
                   placeholder="Örn: Balat sahil yürüyüş rotaları"
