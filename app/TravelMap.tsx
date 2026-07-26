@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import L from "leaflet";
 import { useEffect, useState } from "react";
@@ -145,7 +145,21 @@ function createCityIcon(
   });
 }
 
-function createUserPinIcon(type: "visited" | "wishlist" | "favorite") {
+function createUserPinIcon(type: "visited" | "wishlist" | "favorite", isOwnPin: boolean) {
+  if (!isOwnPin) {
+    return L.divIcon({
+      className: "custom-user-pin",
+      html: `
+        <div class="user-pin-bubble" style="background: #2563EB;">
+          <span>📍</span>
+        </div>
+      `,
+      iconAnchor: [16, 16],
+      iconSize: [32, 32],
+      popupAnchor: [0, -20],
+    });
+  }
+
   const colors = {
     visited: "#10B981",
     wishlist: "#F59E0B",
@@ -303,7 +317,7 @@ export function TravelMap({
 
   return (
     <div className="map-container-wrapper">
-      {/* Harita Katman Değiştirici & Dünya Görünümü Butonu */}
+      {/* Harita katman değiştirici ve dünya görünümü butonu */}
       <div className="map-level-nav">
         <button
           className="zoom-out-btn"
@@ -343,11 +357,12 @@ export function TravelMap({
           onAddPinClick={(coords) => setNewPinCoords(coords)}
         />
 
-        {/* TÜM ÜLKE PINLERİ - Şehirler gösterilirken ülke pinleri gizlenir */}
+        {/* Tüm ülke pinleri - şehirler gösterilirken ülke pinleri gizlenir */}
         {!activeCountryId &&
           countries.map((country) => {
             const countryMark = userPins.find(
               (p) =>
+                p.userId === currentUserId &&
                 Math.abs(p.lat - country.koordinat[0]) < 0.02 &&
                 Math.abs(p.lng - country.koordinat[1]) < 0.02,
             )?.category;
@@ -454,7 +469,7 @@ export function TravelMap({
             );
           })}
 
-        {/* ŞEHİR PINLERİ - Sadece bir ülkeye Yakınlaş denildiğinde görünür */}
+        {/* Şehir pinleri - sadece bir ülkeye yakınlaş denildiğinde görünür */}
         {activeCountryId &&
           cities
             .filter((city) => city.countryId === activeCountryId)
@@ -462,6 +477,7 @@ export function TravelMap({
               const isSelected = city.id === selectedCity?.id;
               const cityMark = userPins.find(
                 (p) =>
+                  p.userId === currentUserId &&
                   Math.abs(p.lat - city.coordinates[0]) < 0.02 &&
                   Math.abs(p.lng - city.coordinates[1]) < 0.02,
               )?.category;
@@ -558,66 +574,59 @@ export function TravelMap({
               );
             })}
 
-        {/* Kullanıcı Pinleri (Yalnızca şehir ve ülkelerle çakışmayan özel konumlar) */}
-        {userPins
-          .filter((pin) => {
-            const isCityMatch = cities.some(
-              (c) =>
-                Math.abs(c.coordinates[0] - pin.lat) < 0.02 &&
-                Math.abs(c.coordinates[1] - pin.lng) < 0.02,
-            );
-            const isCountryMatch = countries.some(
-              (c) =>
-                Math.abs(c.koordinat[0] - pin.lat) < 0.02 &&
-                Math.abs(c.koordinat[1] - pin.lng) < 0.02,
-            );
-            return !isCityMatch && !isCountryMatch;
-          })
-          .map((pin) => (
-          <Marker
-            icon={createUserPinIcon(pin.category)}
-            key={pin.id}
-            position={[pin.lat, pin.lng]}
-          >
-            <Popup autoPan={false} className="dark-map-popup">
-              <div className="popup-card">
-                <h3>
-                  {pin.category === "visited"
-                    ? t.visited
-                    : pin.category === "wishlist"
-                    ? t.wishlist
-                    : t.favorite}
-                  : {pin.title}
-                </h3>
-                {pin.note && <p>💬 "{pin.note}"</p>}
-                {onDeleteUserPin && (!pin.userId || pin.userId === currentUserId) && (
-                  <button
-                    className="delete-pin-card-btn"
-                    onClick={() => onDeleteUserPin(pin.id)}
-                    style={{
-                      marginTop: 10,
-                      width: "100%",
-                      background: "rgba(244, 63, 94, 0.15)",
-                      border: "1px solid rgba(244, 63, 94, 0.35)",
-                      color: "var(--accent-coral)",
-                      borderRadius: "var(--radius-md)",
-                      padding: "8px",
-                      fontSize: "12px",
-                      fontWeight: 800,
-                      cursor: "pointer",
-                    }}
-                    type="button"
-                  >
-                    🗑️ İşareti Kaldır
-                  </button>
-                )}
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+        {/* Kullanıcı pinleri */}
+        {userPins.map((pin) => {
+          const isOwnPin = !pin.userId || pin.userId === currentUserId;
+          const pinLabel = isOwnPin
+            ? pin.category === "visited"
+              ? t.visited
+              : pin.category === "wishlist"
+              ? t.wishlist
+              : t.favorite
+            : "Gezgin paylaşımı";
+
+          return (
+            <Marker
+              icon={createUserPinIcon(pin.category, isOwnPin)}
+              key={pin.id}
+              position={[pin.lat, pin.lng]}
+            >
+              <Popup autoPan={false} className="dark-map-popup">
+                <div className="popup-card">
+                  <h3>
+                    {pinLabel}: {pin.title}
+                  </h3>
+                  {pin.userName && !isOwnPin && <p>👤 {pin.userName} ekledi.</p>}
+                  {pin.note && <p>💬 "{pin.note}"</p>}
+                  {onDeleteUserPin && isOwnPin && (
+                    <button
+                      className="delete-pin-card-btn"
+                      onClick={() => onDeleteUserPin(pin.id)}
+                      style={{
+                        marginTop: 10,
+                        width: "100%",
+                        background: "rgba(244, 63, 94, 0.15)",
+                        border: "1px solid rgba(244, 63, 94, 0.35)",
+                        color: "var(--accent-coral)",
+                        borderRadius: "var(--radius-md)",
+                        padding: "8px",
+                        fontSize: "12px",
+                        fontWeight: 800,
+                        cursor: "pointer",
+                      }}
+                      type="button"
+                    >
+                      İşareti Kaldır
+                    </button>
+                  )}
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
       </MapContainer>
 
-      {/* Harita Stili Seçim Paneli (Sağ Üst) */}
+      {/* Harita stili seçim paneli */}
       <div className="map-style-selector">
         {Object.entries(MAP_STYLES).map(([key, style]) => (
           <button
@@ -631,7 +640,7 @@ export function TravelMap({
         ))}
       </div>
 
-      {/* Yeni Pin Ekleme Modalı */}
+      {/* Yeni pin ekleme modalı */}
       {newPinCoords && (
         <div className="pin-modal-overlay">
           <div className="pin-modal">

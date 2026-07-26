@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { isAdminEmail } from "./admin-config";
 import { useAuth } from "./AuthProvider";
 import { useThemeAndLang } from "./ThemeAndLangProvider";
 
@@ -13,6 +14,7 @@ export function Navbar({
   const { loading, user } = useAuth();
   const { theme, lang, toggleTheme, toggleLang, t } = useThemeAndLang();
   const pathname = usePathname();
+  const isAdmin = isAdminEmail(user?.email);
 
   const isActive = (path: string) => {
     if (path === "/" && pathname === "/") return true;
@@ -28,7 +30,7 @@ export function Navbar({
           Where <span className="brand-gradient">I've Been</span>
         </span>
       </Link>
-      
+
       <nav aria-label="Ana menü">
         <Link className={isActive("/") ? "active" : ""} href="/">
           <span className="nav-icon">🗺️</span> {t.home}
@@ -45,6 +47,11 @@ export function Navbar({
         <Link className={isActive("/iletisim") ? "active" : ""} href="/iletisim">
           <span className="nav-icon">✉️</span> {t.contact}
         </Link>
+        {isAdmin && (
+          <Link className={isActive("/admin") ? "active" : ""} href="/admin">
+            <span className="nav-icon">🛡️</span> Admin
+          </Link>
+        )}
         {user ? (
           <Link className="nav-strong" href="/profil">
             <span className="nav-icon">👤</span> {t.profile}
@@ -57,7 +64,6 @@ export function Navbar({
           )
         )}
 
-        {/* Tema & Dil Kontrol Butonları */}
         <div className="nav-controls">
           <button
             className="theme-toggle-btn"

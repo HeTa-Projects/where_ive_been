@@ -1,10 +1,19 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { updateProfile } from "firebase/auth";
-import { doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
+import {
+  collection,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  query,
+  serverTimestamp,
+  setDoc,
+  where,
+} from "firebase/firestore";
 import { Navbar } from "../Navbar";
 import { useAuth } from "../AuthProvider";
 import { auth, db } from "../firebase";
@@ -60,29 +69,65 @@ export default function Profil() {
       setProfilePhoto(user.photoURL);
     }
 
-    if (db) {
-      try {
-        const userRef = doc(db, "users", user.uid);
-        const unsubscribe = onSnapshot(userRef, (docSnap) => {
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            if (Array.isArray(data.pins)) {
-              setUserPins(data.pins);
-              localStorage.setItem(pinsKey, JSON.stringify(data.pins));
-            }
-            if (data.photoUrl) {
-              setProfilePhoto(data.photoUrl);
-              localStorage.setItem(photoKey, data.photoUrl);
-            }
-          }
-        });
-        return () => unsubscribe();
-      } catch (err) {
-        console.warn("Firestore profile sync error:", err);
-      }
-    }
-  }, [user]);
+    if (!db) return;
 
+    const unsubscribes: Array<() => void> = [];
+
+    try {
+      const pinsQuery = query(
+        collection(db, "public_pins"),
+        where("userId", "==", user.uid),
+      );
+
+      const unsubscribePins = onSnapshot(
+        pinsQuery,
+        (snapshot) => {
+          const pins = snapshot.docs.map((docSnap) => {
+            const data = docSnap.data();
+            return {
+              id: docSnap.id,
+              lat: Number(data.lat),
+              lng: Number(data.lng),
+              title: data.title || "Harita pini",
+              category: data.category || "visited",
+              note: data.note || "",
+              userId: data.userId || "",
+              userName: data.userName || "Gezgin",
+            } satisfies UserPin;
+          });
+          const sortedPins = pins.sort((a, b) => b.id.localeCompare(a.id));
+          setUserPins(sortedPins);
+          localStorage.setItem(pinsKey, JSON.stringify(sortedPins));
+        },
+        (err) => {
+          console.warn("Firestore profile pins sync error:", err);
+        },
+      );
+      unsubscribes.push(unsubscribePins);
+    } catch (err) {
+      console.warn("Firestore profile pins connection error:", err);
+    }
+
+    try {
+      const userRef = doc(db, "users", user.uid);
+      const unsubscribeProfile = onSnapshot(userRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.photoUrl) {
+            setProfilePhoto(data.photoUrl);
+            localStorage.setItem(photoKey, data.photoUrl);
+          }
+        }
+      });
+      unsubscribes.push(unsubscribeProfile);
+    } catch (err) {
+      console.warn("Firestore profile sync error:", err);
+    }
+
+    return () => {
+      unsubscribes.forEach((unsubscribe) => unsubscribe());
+    };
+  }, [user]);
   useEffect(() => {
     if (!loading && !user) {
       router.replace("/giris");
@@ -141,15 +186,7 @@ export default function Profil() {
       localStorage.setItem(`whib_user_pins_${user.uid}`, JSON.stringify(updated));
       if (db) {
         try {
-          await setDoc(
-            doc(db, "users", user.uid),
-            {
-              userId: user.uid,
-              pins: updated,
-              updatedAt: serverTimestamp(),
-            },
-            { merge: true },
-          );
+          await deleteDoc(doc(db, "public_pins", pinId));
         } catch (err) {
           console.error("Firestore pin delete error:", err);
         }

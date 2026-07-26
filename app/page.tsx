@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -43,8 +43,8 @@ export default function Home() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [pinHata, setPinHata] = useState("");
 
-  // Kullanıcının kaydettiği pinleri Firestore & LocalStorage senkronize et
   useEffect(() => {
+    return;
     if (!user) {
       const saved = localStorage.getItem("whib_user_pins_guest");
       if (saved) {
@@ -238,7 +238,7 @@ export default function Home() {
       <Navbar mekanHref={`/mekanlar/${seciliSehir?.id ?? sehirler[0].id}`} />
 
       <section className="map-hero" aria-label="Harita gezgin ekranı">
-        {/* Kategori Filtre Çubuğu */}
+        {/* Kategori filtre çubuğu */}
         <div className="map-top-bar">
           <div className="category-chips-row">
             <div className="category-filters">

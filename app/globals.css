@@ -1091,6 +1091,25 @@ input[type="password"]:focus {
   border-color: var(--accent-cyan);
 }
 
+.admin-danger-btn,
+.reply-meta button,
+.admin-list-row button {
+  border: 1px solid rgba(244, 63, 94, 0.35);
+  border-radius: var(--radius-full);
+  background: rgba(244, 63, 94, 0.12);
+  color: var(--accent-coral);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 6px 12px;
+}
+
+.admin-danger-btn:hover,
+.reply-meta button:hover,
+.admin-list-row button:hover {
+  background: rgba(244, 63, 94, 0.2);
+}
+
 .reply-thread {
   display: grid;
   gap: 10px;
@@ -1168,6 +1187,67 @@ input[type="password"]:focus {
   border-color: rgba(16, 185, 129, 0.35);
   color: var(--accent-emerald);
   background: rgba(16, 185, 129, 0.12);
+}
+
+.admin-stat-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.admin-stat-row span {
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-main);
+  font-size: 13px;
+  font-weight: 800;
+  padding: 8px 12px;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.admin-panel-card {
+  min-height: 260px;
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-soft);
+  padding: 22px;
+}
+
+.admin-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.admin-list-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.035);
+  padding: 12px;
+}
+
+.admin-list-row div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.admin-list-row span,
+.admin-list-row small {
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.35;
 }
 
 .composer-panel form,

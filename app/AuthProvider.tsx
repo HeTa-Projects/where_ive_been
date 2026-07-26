@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import type { User } from "firebase/auth";
 import { onAuthStateChanged, signOut as firebaseSignOut } from "firebase/auth";

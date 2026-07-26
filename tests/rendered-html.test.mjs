@@ -55,7 +55,7 @@ test("community page renders city discussions", async () => {
   assert.equal(response.status, 200);
 
   const html = (await response.text()).replaceAll("<!-- -->", "");
-  assert.match(html, /gezi sohbetine/);
+  assert.match(html, /Dünya genelinde gezgin sohbetleri/);
   assert.match(html, /sohbetleri/);
   assert.match(html, /Yeni sohbet/);
   assert.match(html, /Sohbet başlatmak için giriş/);
@@ -83,4 +83,13 @@ test("auth pages and profile render", async () => {
   assert.match(await giris.text(), /Hesabına giriş yap/);
   assert.match(await kayit.text(), /Yeni hesap oluştur/);
   assert.match(await profil.text(), /Profilini görmek için giriş/);
+});
+
+test("admin page renders restricted panel", async () => {
+  const response = await render("/admin");
+  assert.equal(response.status, 200);
+
+  const html = await response.text();
+  assert.match(html, /Yönetici Paneli/);
+  assert.match(html, /sadece yöneticiler/);
 });
