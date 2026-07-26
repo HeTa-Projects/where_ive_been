@@ -44,57 +44,6 @@ export default function Home() {
   const [pinHata, setPinHata] = useState("");
 
   useEffect(() => {
-    return;
-    if (!user) {
-      const saved = localStorage.getItem("whib_user_pins_guest");
-      if (saved) {
-        try {
-          setUserPins(JSON.parse(saved));
-        } catch {
-          setUserPins([]);
-        }
-      } else {
-        setUserPins([]);
-      }
-      return;
-    }
-
-    const storageKey = `whib_user_pins_${user.uid}`;
-    const saved = localStorage.getItem(storageKey);
-    if (saved) {
-      try {
-        setUserPins(JSON.parse(saved));
-      } catch {
-        setUserPins([]);
-      }
-    }
-
-    if (db) {
-      try {
-        const userRef = doc(db, "users", user.uid);
-        const unsubscribe = onSnapshot(
-          userRef,
-          (docSnap) => {
-            if (docSnap.exists()) {
-              const data = docSnap.data();
-              if (Array.isArray(data.pins)) {
-                setUserPins(data.pins);
-                localStorage.setItem(storageKey, JSON.stringify(data.pins));
-              }
-            }
-          },
-          (err) => {
-            console.warn("Firestore pins sync error:", err);
-          },
-        );
-        return () => unsubscribe();
-      } catch (err) {
-        console.warn("Firestore connection error:", err);
-      }
-    }
-  }, [user]);
-
-  useEffect(() => {
     if (!db) return;
 
     const q = query(collection(db, "public_pins"), orderBy("createdAt", "desc"));
