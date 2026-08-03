@@ -74,6 +74,20 @@ export default function Home() {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    const sehirId = new URLSearchParams(window.location.search).get("sehir");
+    if (!sehirId) return;
+
+    const hedefSehir = sehirler.find((sehir) => sehir.id === sehirId);
+    if (!hedefSehir) return;
+
+    const hedefUlke = ulkeler.find((ulke) => ulke.id === hedefSehir.ulkeId);
+    if (hedefUlke) {
+      setSelectedCountry(hedefUlke);
+    }
+    setSeciliSehirId(hedefSehir.id);
+  }, []);
+
   const ulkeSehirleri = useMemo(() => {
     return sehirler.filter((s) => s.ulkeId === selectedCountry.id);
   }, [selectedCountry.id]);

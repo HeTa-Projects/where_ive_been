@@ -125,11 +125,12 @@ export default function Iletisim() {
         )}
 
         <aside className="contact-note">
-          <span className="small-label">Admin kutusu</span>
-          <h2>Mesajlar Firebase'e kaydediliyor.</h2>
+          <span className="small-label">Geri bildirim kutusu</span>
+          <h2>Mesajın doğrudan ekibe ulaşır.</h2>
           <p>
-            Gönderilen mesajlar Firestore'daki contactMessages koleksiyonuna
-            admin panelinde okunacak şekilde düşer.
+            Öneri, şikayet, hata bildirimi veya güvenlik/moderasyon taleplerini
+            buradan gönderebilirsin. Ekibimiz mesajını inceleyip gerektiğinde
+            hesabındaki e-posta adresinden sana dönüş yapar.
           </p>
         </aside>
       </section>

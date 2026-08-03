@@ -67,6 +67,13 @@ const HAZIR_ROTALAR: Rota[] = [
   },
 ];
 
+function sehirIdBul(sehirAd: string) {
+  return (
+    sehirler.find((sehir) => sehir.ad.toLocaleLowerCase("tr-TR") === sehirAd.toLocaleLowerCase("tr-TR"))
+      ?.id || sehirler[0].id
+  );
+}
+
 export default function Rotalar() {
   const { user } = useAuth();
   const { t } = useThemeAndLang();
@@ -279,7 +286,7 @@ export default function Rotalar() {
               >
                 ❤️ {rota.likes} {t.likes}
               </button>
-              <Link className="outline-link compact-link" href={`/mekanlar/${rota.sehirAd.toLowerCase()}`}>
+              <Link className="outline-link compact-link" href={`/?sehir=${sehirIdBul(rota.sehirAd)}`}>
                 {t.seeOnMap}
               </Link>
             </div>

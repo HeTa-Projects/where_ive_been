@@ -67,7 +67,7 @@ test("contact page renders admin contact form", async () => {
 
   const html = await response.text();
   assert.match(html, /destek talepleri/);
-  assert.match(html, /Admin kutusu/);
+  assert.match(html, /Geri bildirim kutusu/);
   assert.match(html, /giriş yapmalısın/);
 });
 

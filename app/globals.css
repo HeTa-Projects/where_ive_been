@@ -228,6 +228,33 @@ a {
   border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
+[data-theme="light"] .site-navbar {
+  background: rgba(15, 23, 42, 0.86);
+  border-color: rgba(148, 163, 184, 0.28);
+}
+
+[data-theme="light"] .site-navbar .brand,
+[data-theme="light"] .site-navbar nav a {
+  color: #e5edf7;
+}
+
+[data-theme="light"] .site-navbar nav a:hover,
+[data-theme="light"] .site-navbar nav a.active {
+  color: #ffffff;
+  background: rgba(16, 185, 129, 0.22);
+}
+
+[data-theme="light"] .site-navbar nav {
+  border-color: rgba(226, 232, 240, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="light"] .theme-toggle-btn,
+[data-theme="light"] .lang-toggle-btn {
+  color: #e5edf7;
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .nav-strong {
   background: var(--gradient-brand) !important;
   color: #090d16 !important;
@@ -421,6 +448,7 @@ a {
   bottom: 32px;
   left: 32px;
   z-index: 500;
+  max-width: min(720px, calc(100% - 64px));
   padding: 14px 22px;
   background: rgba(15, 23, 42, 0.85);
   backdrop-filter: blur(16px);
@@ -428,6 +456,7 @@ a {
   border-radius: var(--radius-full);
   color: var(--accent-emerald);
   font-weight: 700;
+  line-height: 1.35;
   box-shadow: var(--shadow-main);
 }
 
@@ -2209,6 +2238,44 @@ select option {
   border-color: transparent;
   transform: scale(1.06);
   box-shadow: var(--shadow-glow);
+}
+
+@media (max-width: 1180px) {
+  .map-hint {
+    bottom: 82px;
+    left: 24px;
+    right: 24px;
+    width: fit-content;
+    max-width: calc(100% - 48px);
+    border-radius: var(--radius-md);
+  }
+
+  .map-level-nav {
+    bottom: 24px;
+    left: 24px;
+    transform: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .map-hint {
+    bottom: 92px;
+    left: 16px;
+    right: 16px;
+    max-width: calc(100% - 32px);
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+
+  .map-level-nav {
+    left: 16px;
+    right: 16px;
+  }
+
+  .zoom-out-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 /* ===== HARITA PİN TASARIMLARI (v2) ===== */
