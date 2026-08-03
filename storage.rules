@@ -1,0 +1,43 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function owns(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    match /gallery/{userId}/{fileName} {
+      allow read, write: if owns(userId);
+    }
+
+    match /journal/{userId}/{fileName} {
+      allow read, write: if owns(userId);
+    }
+
+    match /pins/{userId}/{fileName} {
+      allow read, write: if owns(userId);
+    }
+
+    match /avatars/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if owns(userId);
+    }
+
+    match /uploads/{userId}/{fileName} {
+      allow read, write: if owns(userId);
+    }
+
+    match /community/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if owns(userId);
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
