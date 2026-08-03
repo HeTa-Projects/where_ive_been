@@ -1,0 +1,18 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="160" y1="96" x2="864" y2="928" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#07111F"/>
+      <stop offset="1" stop-color="#0E1C2F"/>
+    </linearGradient>
+    <linearGradient id="route" x1="202" y1="616" x2="825" y2="390" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2DD4BF"/>
+      <stop offset="0.5" stop-color="#38BDF8"/>
+      <stop offset="1" stop-color="#F8FAFC"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="230" fill="url(#bg)"/>
+  <path d="M208 354C208 324.2 232.2 300 262 300C284.4 300 304.5 313.8 312.5 334.8L407.9 586.7C411.8 597 426.3 597 430.1 586.6L510.6 367.4C519 344.5 540.8 329.2 565.2 329.2C589.6 329.2 611.4 344.5 619.8 367.4L700.2 586.6C704.1 597 718.6 597 722.5 586.7L817.9 334.8C825.8 313.8 846 300 868.4 300C898.2 300 922.4 324.2 922.4 354C922.4 360.6 921.2 367.1 918.9 373.3L786.5 722.9C775 753.2 746 773.3 713.6 773.3C681.2 773.3 652.2 753.2 640.8 722.8L570 535.3C568.2 530.5 561.4 530.5 559.6 535.3L488.8 722.8C477.4 753.2 448.4 773.3 416 773.3C383.6 773.3 354.6 753.2 343.1 722.9L210.7 373.3C208.4 367.1 208 360.6 208 354Z" fill="#F8FAFC"/>
+  <path d="M171 683C280.5 690.5 340.7 643.8 393 575.5C452.2 498.2 508.6 414.2 614 453C706.8 487.2 744.3 432.6 835 331" fill="none" stroke="url(#route)" stroke-width="56" stroke-linecap="round"/>
+  <circle cx="170" cy="683" r="34" fill="#2DD4BF" stroke="#07111F" stroke-width="16"/>
+  <circle cx="835" cy="331" r="34" fill="#FBBF24" stroke="#07111F" stroke-width="16"/>
+</svg>

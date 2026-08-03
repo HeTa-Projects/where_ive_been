@@ -14,6 +14,19 @@ service firebase.storage {
       allow read, write: if owns(userId);
     }
 
+    match /journal/{userId}/{fileName} {
+      allow read, write: if owns(userId);
+    }
+
+    match /pins/{userId}/{fileName} {
+      allow read, write: if owns(userId);
+    }
+
+    match /avatars/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if owns(userId);
+    }
+
     match /uploads/{userId}/{fileName} {
       allow read, write: if owns(userId);
     }

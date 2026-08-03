@@ -27,7 +27,8 @@ import {
   setDoc,
   updateDoc,
 } from 'firebase/firestore';
-import { auth, db, isFirebaseConfigured } from '../services/firebase';
+import { getDownloadURL, ref, uploadString } from 'firebase/storage';
+import { auth, db, isFirebaseConfigured, storage } from '../services/firebase';
 import {
   INITIAL_GALLERY,
   INITIAL_JOURNAL,
@@ -55,6 +56,8 @@ type AuthMode = 'firebase' | 'demo';
 type PendingAction =
   | { type: 'addPin'; payload: Omit<PinItem, 'id'> }
   | { type: 'addJournalEntry'; payload: Omit<JournalEntry, 'id'> }
+  | { type: 'updateJournalEntry'; payload: { id: string; updates: Partial<Omit<JournalEntry, 'id'>> } }
+  | { type: 'deleteJournalEntry'; payload: { id: string } }
   | { type: 'addGalleryItem'; payload: Omit<GalleryItem, 'id'> }
   | { type: 'addCommunityPost'; payload: Omit<CommunityPost, 'id' | 'authorId' | 'authorName' | 'authorAvatar' | 'likesCount' | 'commentsCount' | 'createdAt' | 'isLiked'> }
   | { type: 'addComment'; payload: { postId: string; text: string } }
@@ -86,6 +89,8 @@ interface AppDataContextValue {
   addPin: (pin: Omit<PinItem, 'id'>) => Promise<void>;
   deletePin: (id: string) => Promise<void>;
   addJournalEntry: (entry: Omit<JournalEntry, 'id'>) => Promise<void>;
+  updateJournalEntry: (id: string, updates: Partial<Omit<JournalEntry, 'id'>>) => Promise<void>;
+  deleteJournalEntry: (id: string) => Promise<void>;
   addGalleryItem: (item: Omit<GalleryItem, 'id'>) => Promise<void>;
   addCommunityPost: (post: CommunityPostInput) => Promise<void>;
   togglePostLike: (post: CommunityPost) => Promise<void>;
@@ -212,6 +217,23 @@ function mapDoc<T extends { id: string }>(id: string, data: Record<string, unkno
   return { id, ...data, createdAt: formatDateValue(data.createdAt) } as unknown as T;
 }
 
+function isRemoteUri(uri: string) {
+  return uri.startsWith('https://') || uri.startsWith('http://');
+}
+
+function imageContentType(uri: string) {
+  const lowerUri = uri.toLowerCase().split('?')[0];
+  if (lowerUri.endsWith('.png')) return 'image/png';
+  if (lowerUri.endsWith('.webp')) return 'image/webp';
+  if (lowerUri.endsWith('.heic')) return 'image/heic';
+  if (lowerUri.endsWith('.heif')) return 'image/heif';
+  return 'image/jpeg';
+}
+
+function withoutUndefined<T extends Record<string, unknown>>(value: T) {
+  return Object.fromEntries(Object.entries(value).filter(([, item]) => item !== undefined));
+}
+
 export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [authMode, setAuthMode] = useState<AuthMode>('firebase');
@@ -277,28 +299,63 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     await writePending(uid, [...pending, action]);
   }, [readPending, user?.uid, writePending]);
 
-  const uploadImage = useCallback(async (uri: string, _folder?: string) => {
-    void _folder;
+  const uploadImage = useCallback(async (uri: string, folder = 'uploads') => {
     const cleanUri = uri.trim();
-    if (cleanUri.startsWith('https://') || cleanUri.startsWith('http://')) return cleanUri;
+    if (!cleanUri) return undefined;
+    if (isRemoteUri(cleanUri)) return cleanUri;
+    if (!storage || !user) return cleanUri;
+
+    const safeFolder = folder.replace(/[^a-z0-9_-]/gi, '') || 'uploads';
+    const contentType = imageContentType(cleanUri);
+    const extension = contentType.split('/')[1] || 'jpg';
+    const imageRef = ref(storage, `${safeFolder}/${user.uid}/${Date.now()}.${extension}`);
+
+    if (cleanUri.startsWith('data:image/')) {
+      const base64 = cleanUri.split(',')[1];
+      if (!base64) return undefined;
+      const snapshot = await uploadString(imageRef, base64, 'base64', { contentType });
+      return getDownloadURL(snapshot.ref);
+    }
+
+    if (cleanUri.startsWith('file://') || cleanUri.startsWith('content://')) {
+      const base64 = await FileSystem.readAsStringAsync(cleanUri, { encoding: FileSystem.EncodingType.Base64 });
+      const snapshot = await uploadString(imageRef, base64, 'base64', { contentType });
+      return getDownloadURL(snapshot.ref);
+    }
+
     return undefined;
-  }, []);
+  }, [user]);
 
   const executeRemote = useCallback(async (action: PendingAction) => {
     if (!db || !user) throw new Error('Firebase config eksik.');
 
     if (action.type === 'addPin') {
-      await addDoc(collection(db, 'users', user.uid, 'pins'), { ...action.payload, createdAt: serverTimestamp() });
+      const imageUrl = action.payload.imageUrl ? await uploadImage(action.payload.imageUrl, 'pins') : undefined;
+      await addDoc(collection(db, 'users', user.uid, 'pins'), withoutUndefined({ ...action.payload, imageUrl, createdAt: serverTimestamp() }));
     }
 
     if (action.type === 'addJournalEntry') {
-      await addDoc(collection(db, 'users', user.uid, 'journalEntries'), { ...action.payload, createdAt: serverTimestamp() });
+      const imageUrl = action.payload.imageUrl ? await uploadImage(action.payload.imageUrl, 'journal') : undefined;
+      await addDoc(collection(db, 'users', user.uid, 'journalEntries'), withoutUndefined({ ...action.payload, imageUrl, createdAt: serverTimestamp() }));
+    }
+
+    if (action.type === 'updateJournalEntry') {
+      const imageUrl = action.payload.updates.imageUrl ? await uploadImage(action.payload.updates.imageUrl, 'journal') : action.payload.updates.imageUrl;
+      await updateDoc(doc(db, 'users', user.uid, 'journalEntries', action.payload.id), withoutUndefined({
+        ...action.payload.updates,
+        imageUrl,
+        updatedAt: serverTimestamp(),
+      }));
+    }
+
+    if (action.type === 'deleteJournalEntry') {
+      await deleteDoc(doc(db, 'users', user.uid, 'journalEntries', action.payload.id));
     }
 
     if (action.type === 'addGalleryItem') {
       const imageUrl = await uploadImage(action.payload.imageUrl, 'gallery');
       if (!imageUrl) throw new Error('Fotoğraf için HTTPS URL gerekli.');
-      await addDoc(collection(db, 'users', user.uid, 'gallery'), { ...action.payload, imageUrl, createdAt: serverTimestamp() });
+      await addDoc(collection(db, 'users', user.uid, 'gallery'), withoutUndefined({ ...action.payload, imageUrl, createdAt: serverTimestamp() }));
     }
 
     if (action.type === 'addCommunityPost') {
@@ -333,10 +390,12 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (action.type === 'updateProfile') {
-      await setDoc(doc(db, 'users', user.uid), { ...action.payload, updatedAt: serverTimestamp() }, { merge: true });
-      await syncPublicProfile(action.payload);
+      const avatar = action.payload.avatar ? await uploadImage(action.payload.avatar, 'avatars') : action.payload.avatar;
+      const profilePayload = withoutUndefined({ ...action.payload, avatar });
+      await setDoc(doc(db, 'users', user.uid), { ...profilePayload, updatedAt: serverTimestamp() }, { merge: true });
+      await syncPublicProfile(profilePayload);
     }
-  }, [communityPosts, profile.avatar, profile.name, syncPublicProfile, uploadImage, user]);
+  }, [profile.avatar, profile.name, syncPublicProfile, uploadImage, user]);
 
   const flushPending = useCallback(async () => {
     if (!user || !db || authMode !== 'firebase' || flushingRef.current) return;
@@ -605,6 +664,30 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       }
     }
     setJournal((current) => [localEntry, ...current]);
+  }, [authMode, enqueuePending, executeRemote, user]);
+
+  const updateJournalEntry = useCallback(async (id: string, updates: Partial<Omit<JournalEntry, 'id'>>) => {
+    setJournal((current) => current.map((entry) => entry.id === id ? { ...entry, ...updates } : entry));
+    if (db && user && authMode === 'firebase') {
+      try {
+        await executeRemote({ type: 'updateJournalEntry', payload: { id, updates } });
+        return;
+      } catch {
+        await enqueuePending({ type: 'updateJournalEntry', payload: { id, updates } });
+      }
+    }
+  }, [authMode, enqueuePending, executeRemote, user]);
+
+  const deleteJournalEntry = useCallback(async (id: string) => {
+    setJournal((current) => current.filter((entry) => entry.id !== id));
+    if (db && user && authMode === 'firebase') {
+      try {
+        await executeRemote({ type: 'deleteJournalEntry', payload: { id } });
+        return;
+      } catch {
+        await enqueuePending({ type: 'deleteJournalEntry', payload: { id } });
+      }
+    }
   }, [authMode, enqueuePending, executeRemote, user]);
 
   const addGalleryItem = useCallback(async (item: Omit<GalleryItem, 'id'>) => {
@@ -928,6 +1011,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     addPin,
     deletePin,
     addJournalEntry,
+    updateJournalEntry,
+    deleteJournalEntry,
     addGalleryItem,
     addCommunityPost,
     togglePostLike,
@@ -948,7 +1033,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     exportUserData,
     requestAccountDeletion,
     uploadImage,
-  }), [addComment, addCommunityPost, addGalleryItem, addJournalEntry, addPin, addPinToCollection, authMode, badges, blockUser, blockedUserIds, collections, commentsByPost, createCollection, deletePin, enterDemo, exportUserData, followUser, followingIds, gallery, hideCommunityPost, journal, loading, login, logout, markNotificationRead, notifications, pendingSyncCount, pins, profile, register, registerPushToken, reportCommunityPost, requestAccountDeletion, routes, togglePostLike, unblockUser, unfollowUser, updateSettings, updateUserProfile, uploadImage, user, visibleCommunityPosts, watchComments]);
+  }), [addComment, addCommunityPost, addGalleryItem, addJournalEntry, addPin, addPinToCollection, authMode, badges, blockUser, blockedUserIds, collections, commentsByPost, createCollection, deleteJournalEntry, deletePin, enterDemo, exportUserData, followUser, followingIds, gallery, hideCommunityPost, journal, loading, login, logout, markNotificationRead, notifications, pendingSyncCount, pins, profile, register, registerPushToken, reportCommunityPost, requestAccountDeletion, routes, togglePostLike, unblockUser, unfollowUser, updateJournalEntry, updateSettings, updateUserProfile, uploadImage, user, visibleCommunityPosts, watchComments]);
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
 }

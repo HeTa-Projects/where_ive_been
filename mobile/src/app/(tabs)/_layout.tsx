@@ -16,22 +16,23 @@ export default function TabLayout() {
           borderTopWidth: 1,
           height: Platform.OS === 'ios' ? 92 : 72,
           paddingBottom: Platform.OS === 'ios' ? 30 : 8,
-          paddingTop: 8,
+          paddingTop: 9,
         },
         tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: '700',
+          fontSize: 11,
+          fontWeight: '800',
           includeFontPadding: false,
         },
-        tabBarItemStyle: { minWidth: 54 },
+        tabBarIconStyle: { marginBottom: 2 },
+        tabBarItemStyle: { borderRadius: 14, marginHorizontal: 6, minWidth: 74 },
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Harita', tabBarIcon: ({ color, size }) => <Ionicons name="map-outline" size={size} color={color} /> }} />
       <Tabs.Screen name="community" options={{ title: 'Topluluk', tabBarIcon: ({ color, size }) => <Ionicons name="people-outline" size={size} color={color} /> }} />
-      <Tabs.Screen name="journal" options={{ title: 'Günlük', tabBarIcon: ({ color, size }) => <Ionicons name="book-outline" size={size} color={color} /> }} />
-      <Tabs.Screen name="gallery" options={{ title: 'Galeri', tabBarIcon: ({ color, size }) => <Ionicons name="images-outline" size={size} color={color} /> }} />
-      <Tabs.Screen name="routes" options={{ title: 'Rota', tabBarIcon: ({ color, size }) => <Ionicons name="navigate-outline" size={size} color={color} /> }} />
       <Tabs.Screen name="profile" options={{ title: 'Profil', tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} /> }} />
+      <Tabs.Screen name="journal" options={{ href: null }} />
+      <Tabs.Screen name="gallery" options={{ href: null }} />
+      <Tabs.Screen name="routes" options={{ href: null }} />
     </Tabs>
   );
 }

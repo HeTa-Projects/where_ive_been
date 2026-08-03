@@ -1,0 +1,19 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="96" y1="96" x2="928" y2="928" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#07111F"/>
+      <stop offset="1" stop-color="#0D1727"/>
+    </linearGradient>
+    <linearGradient id="tile" x1="273" y1="254" x2="774" y2="775" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E5F6F4"/>
+      <stop offset="1" stop-color="#2DD4BF"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="230" fill="url(#bg)"/>
+  <rect x="226" y="227" width="572" height="572" rx="108" fill="#132A3F" stroke="#263852" stroke-width="22"/>
+  <path d="M306 397H718M306 512H718M306 627H718M397 306V718M512 306V718M627 306V718" stroke="#2A4058" stroke-width="20" stroke-linecap="round"/>
+  <path d="M332 333H492C513 333 530 350 530 371V491C530 512 513 529 492 529H332C311 529 294 512 294 491V371C294 350 311 333 332 333Z" fill="url(#tile)"/>
+  <path d="M532 498H692C713 498 730 515 730 536V656C730 677 713 694 692 694H532C511 694 494 677 494 656V536C494 515 511 498 532 498Z" fill="#F8FAFC"/>
+  <path d="M352 675C432 642 465 594 501 536C540 473 595 432 679 389" fill="none" stroke="#38BDF8" stroke-width="34" stroke-linecap="round" stroke-dasharray="1 70"/>
+  <circle cx="679" cy="389" r="39" fill="#FBBF24" stroke="#07111F" stroke-width="16"/>
+</svg>

@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { PinCategory, PinItem } from '../types/travel';
 
 interface AddPinModalProps {
@@ -70,6 +71,25 @@ export const AddPinModal: React.FC<AddPinModalProps> = ({ visible, onClose, onAd
 
     reset();
     onClose();
+  };
+
+  const pickImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('İzin gerekli', 'Yer fotoğrafı seçebilmek için galeri erişimine izin vermelisin.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.85,
+    });
+
+    if (!result.canceled) {
+      setImageUrl(result.assets[0]?.uri ?? '');
+    }
   };
 
   const resolveLocation = async () => {
@@ -154,8 +174,12 @@ export const AddPinModal: React.FC<AddPinModalProps> = ({ visible, onClose, onAd
 
             <Text style={styles.label}>Ziyaret tarihi</Text>
             <TextInput style={styles.input} placeholder="12 Mayıs 2026" placeholderTextColor="#64748B" value={visitedDate} onChangeText={setVisitedDate} />
-            <Text style={styles.label}>Fotoğraf URL</Text>
-            <TextInput style={styles.input} placeholder="https://..." placeholderTextColor="#64748B" autoCapitalize="none" value={imageUrl} onChangeText={setImageUrl} />
+            <Text style={styles.label}>Fotoğraf</Text>
+            <TouchableOpacity style={styles.photoPickerButton} onPress={pickImage}>
+              <Ionicons name="images-outline" size={19} color="#A7F3D0" />
+              <Text style={styles.photoPickerText}>{imageUrl ? 'Fotoğrafı değiştir' : 'Galeriden fotoğraf seç'}</Text>
+            </TouchableOpacity>
+            {imageUrl ? <Image source={{ uri: imageUrl }} style={styles.previewImage} alt="Seçilen yer fotoğrafı" /> : null}
             <Text style={styles.label}>Etiketler</Text>
             <TextInput style={styles.input} placeholder="Tarih, Manzara, Lezzet" placeholderTextColor="#64748B" value={tags} onChangeText={setTags} />
             <Text style={styles.label}>Kısa not</Text>
@@ -197,6 +221,9 @@ const styles = StyleSheet.create({
   starButton: { padding: 3 },
   resolveButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderWidth: 1, borderColor: '#263852', borderRadius: 11, paddingVertical: 10, marginTop: 10 },
   resolveText: { color: '#7DD3FC', fontSize: 13, fontWeight: '800' },
+  photoPickerButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#111C2F', borderWidth: 1, borderColor: '#263852', borderRadius: 12, paddingHorizontal: 13, paddingVertical: 12 },
+  photoPickerText: { flexShrink: 1, color: '#A7F3D0', fontSize: 13, fontWeight: '800' },
+  previewImage: { width: '100%', height: 150, borderRadius: 12, marginTop: 10, backgroundColor: '#263852' },
   submitButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#10B981', paddingVertical: 14, borderRadius: 12, marginTop: 18, gap: 8 },
   submitText: { color: '#FFF', fontWeight: '800', fontSize: 15 },
 });

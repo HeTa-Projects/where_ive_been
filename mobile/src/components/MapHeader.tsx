@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Platform, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { PinCategory } from '../types/travel';
 
 interface MapHeaderProps {
@@ -77,20 +77,20 @@ export const MapHeader: React.FC<MapHeaderProps> = ({
 };
 
 const styles = StyleSheet.create({
-  container: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 16, backgroundColor: '#0B1120', borderBottomWidth: 1, borderBottomColor: '#1E293B' },
-  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 14 },
+  container: { paddingHorizontal: 16, paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) + 18 : 24, paddingBottom: 16, backgroundColor: '#0B1120', borderBottomWidth: 1, borderBottomColor: '#1E293B' },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14 },
   titleContainer: { flex: 1, minWidth: 0 },
-  title: { fontSize: 22, fontWeight: '800', color: '#F8FAFC' },
-  subtitle: { fontSize: 13, color: '#94A3B8', marginTop: 2 },
-  addButton: { flexDirection: 'row', alignItems: 'center', flexShrink: 0, backgroundColor: '#0EA5E9', paddingHorizontal: 13, paddingVertical: 8, borderRadius: 12, gap: 4 },
-  addButtonText: { color: '#FFF', fontWeight: '700', fontSize: 14 },
-  searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#111C2F', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 12, borderWidth: 1, borderColor: '#263852' },
+  title: { fontSize: 22, fontWeight: '900', color: '#F8FAFC' },
+  subtitle: { fontSize: 13, color: '#94A3B8', marginTop: 3 },
+  addButton: { flexDirection: 'row', alignItems: 'center', flexShrink: 0, backgroundColor: '#0EA5E9', paddingHorizontal: 14, paddingVertical: 9, borderRadius: 14, gap: 5 },
+  addButtonText: { color: '#FFF', fontWeight: '900', fontSize: 14 },
+  searchBar: { minHeight: 50, flexDirection: 'row', alignItems: 'center', backgroundColor: '#111C2F', borderRadius: 14, paddingHorizontal: 13, paddingVertical: 10, marginBottom: 12, borderWidth: 1, borderColor: '#263852' },
   searchIcon: { marginRight: 8 },
   searchInput: { flex: 1, color: '#F8FAFC', fontSize: 14 },
   tabRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { flexGrow: 1, minWidth: 70, alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 },
+  chip: { flexGrow: 1, minWidth: 70, alignItems: 'center', paddingHorizontal: 12, paddingVertical: 9, borderRadius: 12 },
   chipInactive: { backgroundColor: '#111C2F', borderWidth: 1, borderColor: '#263852' },
-  chipText: { fontSize: 13, fontWeight: '700' },
+  chipText: { fontSize: 13, fontWeight: '900' },
   chipTextActive: { color: '#FFF' },
   chipTextInactive: { color: '#94A3B8' },
 });
